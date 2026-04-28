@@ -1,0 +1,21 @@
+project_name           = "team9-mini"
+environment            = "stage"
+aws_region             = "ap-northeast-2"
+terraform_state_bucket = "team9-mini-stage-terraform-state"
+terraform_state_region = "ap-northeast-2"
+root_domain_name       = "example.com"
+frontend_domain_name   = "stage-app.example.com"
+harbor_registry_url    = "harbor.example.com"
+cert_manager_email     = "platform@example.com"
+kubernetes_version     = "1.31"
+general_node_instance_types = ["t3.large"]
+build_node_instance_types   = ["m6i.xlarge"]
+az_count               = 2
+nat_gateway_per_az     = false
+
+common_tags = {
+  Project     = "team9-mini"
+  Team        = "team9"
+  Environment = "stage"
+  ManagedBy   = "terraform"
+}

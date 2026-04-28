@@ -1,0 +1,23 @@
+.DS_Store
+
+# Terraform working directories and local state
+**/.terraform/
+**/terraform.tfstate
+**/terraform.tfstate.*
+**/*.tfplan
+**/crash.log
+**/crash.*.log
+**/override.tf
+**/override.tf.json
+**/*_override.tf
+**/*_override.tf.json
+
+# Local backend and environment files
+terraform/environments/**/backend*.hcl
+!terraform/environments/**/backend.hcl.example
+terraform/environments/**/global.tfvars
+!terraform/environments/**/*.tfvars.example
+
+# Local CLI files
+**/.terraformrc
+**/terraform.rc

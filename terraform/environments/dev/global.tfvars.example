@@ -1,0 +1,21 @@
+project_name           = "team9-mini"
+environment            = "dev"
+aws_region             = "ap-northeast-2"
+terraform_state_bucket = "team9-mini-dev-terraform-state"
+terraform_state_region = "ap-northeast-2"
+root_domain_name       = "skala-ai.com"
+frontend_domain_name   = "team9-front.cloud.skala-ai.com"
+harbor_registry_url    = "amdp-registry.skala-ai.com"
+cert_manager_email     = "skala@sk.com"
+kubernetes_version     = "1.31"
+general_node_instance_types = ["t3.large"]
+build_node_instance_types   = ["m6i.xlarge"]
+az_count               = 2
+nat_gateway_per_az     = false
+
+common_tags = {
+  Project     = "team9-mini"
+  Team        = "team9"
+  Environment = "dev"
+  ManagedBy   = "terraform"
+}

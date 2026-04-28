@@ -1,0 +1,5 @@
+bucket         = "team9-mini-dev-terraform-state"
+key            = "02-foundation/terraform.tfstate"
+region         = "ap-northeast-2"
+dynamodb_table = "team9-mini-dev-terraform-lock"
+encrypt        = true
