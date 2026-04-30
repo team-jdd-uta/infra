@@ -86,6 +86,38 @@ resource "aws_acm_certificate_validation" "frontend" {
   validation_record_fqdns = [for record in aws_route53_record.frontend_cert_validation : record.fqdn]
 }
 
+resource "aws_acm_certificate" "alb_ingress" {
+  domain_name       = var.ingress_wildcard_domain_name
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_route53_record" "alb_ingress_cert_validation" {
+  for_each = {
+    for option in aws_acm_certificate.alb_ingress.domain_validation_options :
+    option.domain_name => {
+      name   = option.resource_record_name
+      record = option.resource_record_value
+      type   = option.resource_record_type
+    }
+  }
+
+  allow_overwrite = true
+  zone_id         = data.aws_route53_zone.root.zone_id
+  name            = each.value.name
+  type            = each.value.type
+  ttl             = 60
+  records         = [each.value.record]
+}
+
+resource "aws_acm_certificate_validation" "alb_ingress" {
+  certificate_arn         = aws_acm_certificate.alb_ingress.arn
+  validation_record_fqdns = [for record in aws_route53_record.alb_ingress_cert_validation : record.fqdn]
+}
+
 resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
   is_ipv6_enabled     = true
