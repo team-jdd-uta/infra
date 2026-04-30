@@ -89,3 +89,9 @@ variable "kms_key_arn" {
 variable "node_security_group_id" {
   type = string
 }
+
+variable "additional_node_security_group_ids" {
+  type        = list(string)
+  description = "Additional security groups attached to EKS managed workload ENIs that require data-tier access."
+  default     = []
+}

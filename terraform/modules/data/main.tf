@@ -89,6 +89,17 @@ resource "aws_security_group_rule" "rds_from_nodes" {
   source_security_group_id = var.node_security_group_id
 }
 
+resource "aws_security_group_rule" "rds_from_additional_node_security_groups" {
+  for_each = toset(var.additional_node_security_group_ids)
+
+  type                     = "ingress"
+  from_port                = 3306
+  to_port                  = 3306
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.rds.id
+  source_security_group_id = each.value
+}
+
 resource "aws_security_group_rule" "msk_from_msk_connect" {
   type                     = "ingress"
   from_port                = 9098
@@ -105,6 +116,17 @@ resource "aws_security_group_rule" "msk_from_nodes" {
   protocol                 = "tcp"
   security_group_id        = aws_security_group.msk.id
   source_security_group_id = var.node_security_group_id
+}
+
+resource "aws_security_group_rule" "msk_from_additional_node_security_groups" {
+  for_each = toset(var.additional_node_security_group_ids)
+
+  type                     = "ingress"
+  from_port                = 9098
+  to_port                  = 9098
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.msk.id
+  source_security_group_id = each.value
 }
 
 resource "aws_security_group" "documentdb" {
@@ -127,6 +149,17 @@ resource "aws_security_group_rule" "documentdb_from_nodes" {
   protocol                 = "tcp"
   security_group_id        = aws_security_group.documentdb.id
   source_security_group_id = var.node_security_group_id
+}
+
+resource "aws_security_group_rule" "documentdb_from_additional_node_security_groups" {
+  for_each = toset(var.additional_node_security_group_ids)
+
+  type                     = "ingress"
+  from_port                = 27017
+  to_port                  = 27017
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.documentdb.id
+  source_security_group_id = each.value
 }
 
 resource "random_password" "rds" {

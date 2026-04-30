@@ -18,6 +18,10 @@ data "terraform_remote_state" "platform" {
   }
 }
 
+data "aws_eks_cluster" "platform" {
+  name = data.terraform_remote_state.platform.outputs.cluster_name
+}
+
 module "data" {
   source = "../../modules/data"
 
@@ -44,4 +48,7 @@ module "data" {
   private_data_subnet_ids          = data.terraform_remote_state.foundation.outputs.private_data_subnet_ids
   kms_key_arn                      = data.terraform_remote_state.foundation.outputs.kms_key_arn
   node_security_group_id           = data.terraform_remote_state.platform.outputs.node_security_group_id
+  additional_node_security_group_ids = [
+    data.aws_eks_cluster.platform.vpc_config[0].cluster_security_group_id,
+  ]
 }
