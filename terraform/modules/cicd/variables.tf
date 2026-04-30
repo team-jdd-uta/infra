@@ -88,6 +88,11 @@ variable "jenkins_kaniko_service_account_name" {
   default = "jenkins-kaniko-agent"
 }
 
+variable "frontend_bucket_name" {
+  type        = string
+  description = "S3 bucket name used by the frontend deployment pipeline."
+}
+
 variable "jenkins_obsolete_job_names" {
   type        = list(string)
   description = "Previously generated Jenkins jobs to delete during controller startup."

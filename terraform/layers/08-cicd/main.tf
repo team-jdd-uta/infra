@@ -22,5 +22,6 @@ module "cicd" {
   frontend_pipeline_jenkinsfile_path         = var.frontend_pipeline_jenkinsfile_path
   backend_pipeline_repositories              = var.backend_pipeline_repositories
   jenkins_kaniko_service_account_name        = var.jenkins_kaniko_service_account_name
+  frontend_bucket_name                       = var.frontend_bucket_name
   jenkins_obsolete_job_names                 = var.jenkins_obsolete_job_names
 }
