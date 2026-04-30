@@ -114,7 +114,10 @@ data "aws_iam_policy_document" "jenkins_kaniko_assume_role" {
 
 data "aws_iam_policy_document" "jenkins_kaniko_ecr_push" {
   statement {
-    actions   = ["ecr:GetAuthorizationToken"]
+    actions = [
+      "ecr:DescribeRepositories",
+      "ecr:GetAuthorizationToken",
+    ]
     resources = ["*"]
   }
 
@@ -123,12 +126,34 @@ data "aws_iam_policy_document" "jenkins_kaniko_ecr_push" {
       "ecr:BatchCheckLayerAvailability",
       "ecr:BatchGetImage",
       "ecr:CompleteLayerUpload",
-      "ecr:DescribeRepositories",
       "ecr:InitiateLayerUpload",
       "ecr:PutImage",
       "ecr:UploadLayerPart",
     ]
     resources = [for repository in aws_ecr_repository.repositories : repository.arn]
+  }
+}
+
+data "aws_iam_policy_document" "jenkins_frontend_deploy" {
+  statement {
+    sid       = "FrontendBucketList"
+    actions   = ["s3:ListBucket"]
+    resources = ["arn:aws:s3:::${var.frontend_bucket_name}"]
+  }
+
+  statement {
+    sid = "FrontendBucketObjects"
+    actions = [
+      "s3:DeleteObject",
+      "s3:PutObject",
+    ]
+    resources = ["arn:aws:s3:::${var.frontend_bucket_name}/*"]
+  }
+
+  statement {
+    sid       = "CloudFrontInvalidation"
+    actions   = ["cloudfront:CreateInvalidation"]
+    resources = ["*"]
   }
 }
 
@@ -147,6 +172,12 @@ resource "aws_iam_role_policy_attachment" "jenkins_kaniko_ecr_push" {
   policy_arn = aws_iam_policy.jenkins_kaniko_ecr_push.arn
 }
 
+resource "aws_iam_role_policy" "jenkins_frontend_deploy" {
+  name   = "${var.project_name}-${var.environment}-frontend-s3-cloudfront-policy"
+  role   = aws_iam_role.jenkins_kaniko_agent.id
+  policy = data.aws_iam_policy_document.jenkins_frontend_deploy.json
+}
+
 resource "kubernetes_service_account" "jenkins_kaniko_agent" {
   metadata {
     name      = var.jenkins_kaniko_service_account_name
@@ -156,7 +187,10 @@ resource "kubernetes_service_account" "jenkins_kaniko_agent" {
     }
   }
 
-  depends_on = [aws_iam_role_policy_attachment.jenkins_kaniko_ecr_push]
+  depends_on = [
+    aws_iam_role_policy.jenkins_frontend_deploy,
+    aws_iam_role_policy_attachment.jenkins_kaniko_ecr_push,
+  ]
 }
 
 resource "kubernetes_manifest" "jenkins_admin_external_secret" {
