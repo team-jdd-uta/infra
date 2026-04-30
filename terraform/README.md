@@ -26,6 +26,7 @@ terraform/
     06-data/
     07-observability/
     08-cicd/
+    09-auth/
   modules/
     bootstrap-backend/
     foundation/
@@ -55,6 +56,8 @@ terraform/
    - Prometheus, Grafana, Loki, SNS
 8. `08-cicd`
    - Jenkins on EKS
+9. `09-auth`
+   - Cognito User Pool/App Client, login-service Cognito IRSA role
 
 ## Backend 원칙
 
