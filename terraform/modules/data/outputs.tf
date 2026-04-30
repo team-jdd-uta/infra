@@ -1,5 +1,13 @@
 output "rds_instance_identifiers" {
-  value = aws_db_instance.mariadb[*].identifier
+  value = { for service, instance in aws_db_instance.mariadb : service => instance.identifier }
+}
+
+output "rds_instance_endpoints" {
+  value = { for service, instance in aws_db_instance.mariadb : service => instance.address }
+}
+
+output "rds_credentials_secret_names" {
+  value = { for service, secret in aws_secretsmanager_secret.rds : service => secret.name }
 }
 
 output "msk_cluster_arn" {

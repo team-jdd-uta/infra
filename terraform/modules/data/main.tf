@@ -1,8 +1,85 @@
 locals {
-  db_names         = [for index in range(var.db_instance_count) : format("%s-%s-db-%02d", var.project_name, var.environment, index + 1)]
+  mariadb_databases = {
+    user-service = {
+      identifier  = "${var.project_name}-${var.environment}-user-service-rds"
+      secret_name = "${var.project_name}-${var.environment}-db-01-credentials"
+      db_name     = "app1"
+    }
+    room-service = {
+      identifier  = "${var.project_name}-${var.environment}-room-service-rds"
+      secret_name = "${var.project_name}-${var.environment}-db-02-credentials"
+      db_name     = "app2"
+    }
+    chat-service = {
+      identifier  = "${var.project_name}-${var.environment}-chat-service-rds"
+      secret_name = "${var.project_name}-${var.environment}-db-03-credentials"
+      db_name     = "app3"
+    }
+  }
+
   msk_name_suffix  = endswith(var.msk_kafka_version, ".kraft") ? "-kraft" : ""
   msk_cluster_name = "${var.project_name}-${var.environment}-msk${local.msk_name_suffix}"
   msk_config_name  = "${var.project_name}-${var.environment}-msk-config${local.msk_name_suffix}-${replace(var.msk_kafka_version, ".", "-")}"
+}
+
+moved {
+  from = random_password.rds[0]
+  to   = random_password.rds["user-service"]
+}
+
+moved {
+  from = random_password.rds[1]
+  to   = random_password.rds["room-service"]
+}
+
+moved {
+  from = random_password.rds[2]
+  to   = random_password.rds["chat-service"]
+}
+
+moved {
+  from = aws_secretsmanager_secret.rds[0]
+  to   = aws_secretsmanager_secret.rds["user-service"]
+}
+
+moved {
+  from = aws_secretsmanager_secret.rds[1]
+  to   = aws_secretsmanager_secret.rds["room-service"]
+}
+
+moved {
+  from = aws_secretsmanager_secret.rds[2]
+  to   = aws_secretsmanager_secret.rds["chat-service"]
+}
+
+moved {
+  from = aws_secretsmanager_secret_version.rds[0]
+  to   = aws_secretsmanager_secret_version.rds["user-service"]
+}
+
+moved {
+  from = aws_secretsmanager_secret_version.rds[1]
+  to   = aws_secretsmanager_secret_version.rds["room-service"]
+}
+
+moved {
+  from = aws_secretsmanager_secret_version.rds[2]
+  to   = aws_secretsmanager_secret_version.rds["chat-service"]
+}
+
+moved {
+  from = aws_db_instance.mariadb[0]
+  to   = aws_db_instance.mariadb["user-service"]
+}
+
+moved {
+  from = aws_db_instance.mariadb[1]
+  to   = aws_db_instance.mariadb["room-service"]
+}
+
+moved {
+  from = aws_db_instance.mariadb[2]
+  to   = aws_db_instance.mariadb["chat-service"]
 }
 
 resource "aws_db_subnet_group" "mariadb" {
@@ -163,33 +240,36 @@ resource "aws_security_group_rule" "documentdb_from_additional_node_security_gro
 }
 
 resource "random_password" "rds" {
-  count   = var.db_instance_count
+  for_each = local.mariadb_databases
+
   length  = 20
   special = false
 }
 
 resource "aws_secretsmanager_secret" "rds" {
-  count       = var.db_instance_count
-  name        = "${local.db_names[count.index]}-credentials"
-  description = "RDS credentials for ${local.db_names[count.index]}"
+  for_each = local.mariadb_databases
+
+  name        = each.value.secret_name
+  description = "RDS credentials for ${each.key}"
   kms_key_id  = var.kms_key_arn
 }
 
 resource "aws_secretsmanager_secret_version" "rds" {
-  count     = var.db_instance_count
-  secret_id = aws_secretsmanager_secret.rds[count.index].id
+  for_each = local.mariadb_databases
+
+  secret_id = aws_secretsmanager_secret.rds[each.key].id
   secret_string = jsonencode({
     username = "admin"
-    password = random_password.rds[count.index].result
+    password = random_password.rds[each.key].result
     engine   = "mariadb"
-    db_name  = "app${count.index + 1}"
+    db_name  = each.value.db_name
   })
 }
 
 resource "aws_db_instance" "mariadb" {
-  count = var.db_instance_count
+  for_each = local.mariadb_databases
 
-  identifier              = local.db_names[count.index]
+  identifier              = each.value.identifier
   engine                  = "mariadb"
   engine_version          = "10.11"
   instance_class          = "db.t4g.medium"
@@ -199,8 +279,8 @@ resource "aws_db_instance" "mariadb" {
   parameter_group_name    = aws_db_parameter_group.mariadb.name
   vpc_security_group_ids  = [aws_security_group.rds.id]
   username                = "admin"
-  password                = random_password.rds[count.index].result
-  db_name                 = "app${count.index + 1}"
+  password                = random_password.rds[each.key].result
+  db_name                 = each.value.db_name
   storage_encrypted       = true
   kms_key_id              = var.kms_key_arn
   backup_retention_period = 7
@@ -208,6 +288,11 @@ resource "aws_db_instance" "mariadb" {
   deletion_protection     = var.environment == "prod"
   skip_final_snapshot     = var.environment != "prod"
   apply_immediately       = var.environment != "prod"
+
+  tags = merge(var.common_tags, {
+    Name    = each.value.identifier
+    Service = each.key
+  })
 }
 
 resource "aws_msk_configuration" "this" {
@@ -382,10 +467,10 @@ resource "aws_mskconnect_connector" "debezium_source" {
 
   connector_configuration = {
     "connector.class"                          = "io.debezium.connector.mysql.MySqlConnector"
-    "database.hostname"                        = aws_db_instance.mariadb[0].address
+    "database.hostname"                        = aws_db_instance.mariadb["user-service"].address
     "database.port"                            = "3306"
     "database.user"                            = "admin"
-    "database.password"                        = random_password.rds[0].result
+    "database.password"                        = random_password.rds["user-service"].result
     "database.server.id"                       = var.debezium_database_server_id
     "database.server.name"                     = "${var.project_name}-${var.environment}-mariadb"
     "database.include.list"                    = var.debezium_database_include_list

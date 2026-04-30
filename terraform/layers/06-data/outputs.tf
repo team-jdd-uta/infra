@@ -2,6 +2,14 @@ output "rds_instance_identifiers" {
   value = module.data.rds_instance_identifiers
 }
 
+output "rds_instance_endpoints" {
+  value = module.data.rds_instance_endpoints
+}
+
+output "rds_credentials_secret_names" {
+  value = module.data.rds_credentials_secret_names
+}
+
 output "msk_cluster_arn" {
   value = module.data.msk_cluster_arn
 }
