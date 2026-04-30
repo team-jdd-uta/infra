@@ -1,25 +1,38 @@
 locals {
   mariadb_databases = {
     user-service = {
-      identifier  = "${var.project_name}-${var.environment}-user-service-rds"
-      secret_name = "${var.project_name}-${var.environment}-db-01-credentials"
-      db_name     = "app1"
+      identifier                = "${var.project_name}-${var.environment}-user-service-rds"
+      secret_name               = "${var.project_name}-${var.environment}-db-01-credentials"
+      db_name                   = "app1"
+      debezium_connector_name   = "${var.project_name}-${var.environment}-debezium-source"
+      debezium_server_name      = "${var.project_name}-${var.environment}-mariadb"
+      debezium_server_id_offset = 0
+      debezium_topic_prefix     = var.debezium_topic_prefix
     }
     room-service = {
-      identifier  = "${var.project_name}-${var.environment}-room-service-rds"
-      secret_name = "${var.project_name}-${var.environment}-db-02-credentials"
-      db_name     = "app2"
+      identifier                = "${var.project_name}-${var.environment}-room-service-rds"
+      secret_name               = "${var.project_name}-${var.environment}-db-02-credentials"
+      db_name                   = "app2"
+      debezium_connector_name   = "${var.project_name}-${var.environment}-room-service-debezium-source"
+      debezium_server_name      = "${var.project_name}-${var.environment}-room-service-mariadb"
+      debezium_server_id_offset = 1
+      debezium_topic_prefix     = "${var.debezium_topic_prefix}.room"
     }
     chat-service = {
-      identifier  = "${var.project_name}-${var.environment}-chat-service-rds"
-      secret_name = "${var.project_name}-${var.environment}-db-03-credentials"
-      db_name     = "app3"
+      identifier                = "${var.project_name}-${var.environment}-chat-service-rds"
+      secret_name               = "${var.project_name}-${var.environment}-db-03-credentials"
+      db_name                   = "app3"
+      debezium_connector_name   = "${var.project_name}-${var.environment}-chat-service-debezium-source"
+      debezium_server_name      = "${var.project_name}-${var.environment}-chat-service-mariadb"
+      debezium_server_id_offset = 2
+      debezium_topic_prefix     = "${var.debezium_topic_prefix}.chat"
     }
   }
 
-  msk_name_suffix  = endswith(var.msk_kafka_version, ".kraft") ? "-kraft" : ""
-  msk_cluster_name = "${var.project_name}-${var.environment}-msk${local.msk_name_suffix}"
-  msk_config_name  = "${var.project_name}-${var.environment}-msk-config${local.msk_name_suffix}-${replace(var.msk_kafka_version, ".", "-")}"
+  debezium_connector_databases = var.enable_debezium_connector ? local.mariadb_databases : {}
+  msk_name_suffix              = endswith(var.msk_kafka_version, ".kraft") ? "-kraft" : ""
+  msk_cluster_name             = "${var.project_name}-${var.environment}-msk${local.msk_name_suffix}"
+  msk_config_name              = "${var.project_name}-${var.environment}-msk-config${local.msk_name_suffix}-${replace(var.msk_kafka_version, ".", "-")}"
 }
 
 moved {
@@ -80,6 +93,11 @@ moved {
 moved {
   from = aws_db_instance.mariadb[2]
   to   = aws_db_instance.mariadb["chat-service"]
+}
+
+moved {
+  from = aws_mskconnect_connector.debezium_source[0]
+  to   = aws_mskconnect_connector.debezium_source["user-service"]
 }
 
 resource "aws_db_subnet_group" "mariadb" {
@@ -454,8 +472,8 @@ resource "aws_mskconnect_custom_plugin" "debezium" {
 }
 
 resource "aws_mskconnect_connector" "debezium_source" {
-  count                = var.enable_debezium_connector ? 1 : 0
-  name                 = "${var.project_name}-${var.environment}-debezium-source"
+  for_each             = local.debezium_connector_databases
+  name                 = each.value.debezium_connector_name
   kafkaconnect_version = var.msk_connect_kafkaconnect_version
 
   capacity {
@@ -467,18 +485,18 @@ resource "aws_mskconnect_connector" "debezium_source" {
 
   connector_configuration = {
     "connector.class"                          = "io.debezium.connector.mysql.MySqlConnector"
-    "database.hostname"                        = aws_db_instance.mariadb["user-service"].address
+    "database.hostname"                        = aws_db_instance.mariadb[each.key].address
     "database.port"                            = "3306"
     "database.user"                            = "admin"
-    "database.password"                        = random_password.rds["user-service"].result
-    "database.server.id"                       = var.debezium_database_server_id
-    "database.server.name"                     = "${var.project_name}-${var.environment}-mariadb"
-    "database.include.list"                    = var.debezium_database_include_list
-    "topic.prefix"                             = var.debezium_topic_prefix
+    "database.password"                        = random_password.rds[each.key].result
+    "database.server.id"                       = tostring(tonumber(var.debezium_database_server_id) + each.value.debezium_server_id_offset)
+    "database.server.name"                     = each.value.debezium_server_name
+    "database.include.list"                    = each.value.db_name
+    "topic.prefix"                             = each.value.debezium_topic_prefix
     "include.schema.changes"                   = "false"
     "tasks.max"                                = tostring(var.debezium_tasks_max)
     "database.history.kafka.bootstrap.servers" = aws_msk_cluster.this.bootstrap_brokers_sasl_iam
-    "database.history.kafka.topic"             = "${var.debezium_topic_prefix}.schema-history"
+    "database.history.kafka.topic"             = "${each.value.debezium_topic_prefix}.schema-history"
   }
 
   kafka_cluster {
