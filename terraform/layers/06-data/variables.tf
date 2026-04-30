@@ -23,9 +23,19 @@ variable "db_instance_count" {
   default = 3
 }
 
-variable "redis_node_type" {
+variable "msk_broker_instance_type" {
   type    = string
-  default = "cache.r7g.large"
+  default = "kafka.m7g.large"
+}
+
+variable "msk_kafka_version" {
+  type    = string
+  default = "3.7.x"
+}
+
+variable "msk_number_of_broker_nodes" {
+  type    = number
+  default = 3
 }
 
 variable "documentdb_instance_class" {

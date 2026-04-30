@@ -5,11 +5,76 @@ terraform_state_bucket = "team9-mini-prod-terraform-state"
 terraform_state_region = "ap-northeast-2"
 root_domain_name       = "example.com"
 frontend_domain_name   = "app.example.com"
-harbor_registry_url    = "harbor.example.com"
 cert_manager_email     = "platform@example.com"
 kubernetes_version     = "1.31"
 general_node_instance_types = ["t3.large"]
 build_node_instance_types   = ["m6i.xlarge"]
+msk_broker_instance_type    = "kafka.m7g.large"
+msk_kafka_version           = "3.7.x"
+msk_number_of_broker_nodes  = 3
+ecr_frontend_repository_name = "team9-frontend"
+ecr_backend_repository_names = [
+  "team9-backend-api-gateway",
+  "team9-backend-auth",
+  "team9-backend-user",
+  "team9-backend-chat",
+  "team9-backend-notification",
+  "team9-backend-media",
+  "team9-backend-admin",
+]
+jenkins_admin_username         = "admin"
+jenkins_admin_password         = "change-me-admin-password"
+jenkins_git_credentials_id     = "gitops-scm-creds"
+jenkins_git_username           = "example-username"
+jenkins_git_token              = "example-token"
+frontend_pipeline_job_name     = "frontend-prod"
+frontend_pipeline_repo_url     = "https://github.com/example-org/team9-frontend.git"
+frontend_pipeline_repo_branch  = "main"
+frontend_pipeline_jenkinsfile_path = "Jenkinsfile"
+backend_pipeline_repositories = [
+  {
+    job_name         = "backend-api-gateway-prod"
+    repo_url         = "https://github.com/example-org/team9-backend-api-gateway.git"
+    branch           = "main"
+    jenkinsfile_path = "Jenkinsfile"
+  },
+  {
+    job_name         = "backend-auth-prod"
+    repo_url         = "https://github.com/example-org/team9-backend-auth.git"
+    branch           = "main"
+    jenkinsfile_path = "Jenkinsfile"
+  },
+  {
+    job_name         = "backend-user-prod"
+    repo_url         = "https://github.com/example-org/team9-backend-user.git"
+    branch           = "main"
+    jenkinsfile_path = "Jenkinsfile"
+  },
+  {
+    job_name         = "backend-chat-prod"
+    repo_url         = "https://github.com/example-org/team9-backend-chat.git"
+    branch           = "main"
+    jenkinsfile_path = "Jenkinsfile"
+  },
+  {
+    job_name         = "backend-notification-prod"
+    repo_url         = "https://github.com/example-org/team9-backend-notification.git"
+    branch           = "main"
+    jenkinsfile_path = "Jenkinsfile"
+  },
+  {
+    job_name         = "backend-media-prod"
+    repo_url         = "https://github.com/example-org/team9-backend-media.git"
+    branch           = "main"
+    jenkinsfile_path = "Jenkinsfile"
+  },
+  {
+    job_name         = "backend-admin-prod"
+    repo_url         = "https://github.com/example-org/team9-backend-admin.git"
+    branch           = "main"
+    jenkinsfile_path = "Jenkinsfile"
+  },
+]
 az_count               = 2
 nat_gateway_per_az     = true
 

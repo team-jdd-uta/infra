@@ -18,8 +18,16 @@ variable "db_instance_count" {
   type = number
 }
 
-variable "redis_node_type" {
+variable "msk_broker_instance_type" {
   type = string
+}
+
+variable "msk_kafka_version" {
+  type = string
+}
+
+variable "msk_number_of_broker_nodes" {
+  type = number
 }
 
 variable "documentdb_instance_class" {
