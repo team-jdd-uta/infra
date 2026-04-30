@@ -204,9 +204,9 @@ resource "aws_eks_node_group" "general" {
   capacity_type   = "ON_DEMAND"
 
   scaling_config {
-    desired_size = 3
-    min_size     = 3
-    max_size     = 4
+    desired_size = 5
+    min_size     = 5
+    max_size     = 6
   }
 
   update_config {

@@ -7,7 +7,7 @@ locals {
     job_dsl            = true
   }
 
-  ecr_repository_names = var.ecr_backend_repository_names
+  ecr_repository_names = distinct(concat(var.ecr_backend_repository_names, var.ecr_legacy_repository_names))
 
   jcasc_config = templatefile("${path.module}/assets/jenkins/jcasc.yaml.tftpl", {
     jenkins_git_credentials_id        = var.jenkins_git_credentials_id
@@ -185,6 +185,7 @@ resource "helm_release" "jenkins" {
           hostName         = var.jenkins_hostname
           annotations = {
             "alb.ingress.kubernetes.io/scheme"          = "internet-facing"
+            "alb.ingress.kubernetes.io/target-type"     = "ip"
             "external-dns.alpha.kubernetes.io/hostname" = var.jenkins_hostname
           }
         }

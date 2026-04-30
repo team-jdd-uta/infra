@@ -1,5 +1,8 @@
 locals {
-  db_names = [for index in range(var.db_instance_count) : format("%s-%s-db-%02d", var.project_name, var.environment, index + 1)]
+  db_names         = [for index in range(var.db_instance_count) : format("%s-%s-db-%02d", var.project_name, var.environment, index + 1)]
+  msk_name_suffix  = endswith(var.msk_kafka_version, ".kraft") ? "-kraft" : ""
+  msk_cluster_name = "${var.project_name}-${var.environment}-msk${local.msk_name_suffix}"
+  msk_config_name  = "${var.project_name}-${var.environment}-msk-config${local.msk_name_suffix}-${replace(var.msk_kafka_version, ".", "-")}"
 }
 
 resource "aws_db_subnet_group" "mariadb" {
@@ -151,17 +154,21 @@ resource "aws_db_instance" "mariadb" {
 
 resource "aws_msk_configuration" "this" {
   kafka_versions    = [var.msk_kafka_version]
-  name              = "${var.project_name}-${var.environment}-msk-config"
+  name              = local.msk_config_name
   server_properties = <<-EOT
     auto.create.topics.enable=false
     default.replication.factor=2
     min.insync.replicas=2
     num.partitions=3
   EOT
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_msk_cluster" "this" {
-  cluster_name           = "${var.project_name}-${var.environment}-msk"
+  cluster_name           = local.msk_cluster_name
   kafka_version          = var.msk_kafka_version
   number_of_broker_nodes = var.msk_number_of_broker_nodes
 

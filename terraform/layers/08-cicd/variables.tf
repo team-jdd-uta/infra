@@ -31,6 +31,14 @@ variable "ecr_backend_repository_names" {
   ]
 }
 
+variable "ecr_legacy_repository_names" {
+  type = list(string)
+  default = [
+    "team9-ui-vue",
+    "team9-debezium-connect",
+  ]
+}
+
 variable "jenkins_git_credentials_id" {
   type    = string
   default = "gitops-scm-creds"

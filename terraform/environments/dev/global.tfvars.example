@@ -21,6 +21,10 @@ ecr_backend_repository_names = [
   "team9-chat-service",
   "team9-room-service",
 ]
+ecr_legacy_repository_names = [
+  "team9-ui-vue",
+  "team9-debezium-connect",
+]
 enable_debezium_connector = false
 debezium_plugin_bucket_arn = "arn:aws:s3:::REPLACE_ME"
 debezium_plugin_file_key   = "plugins/debezium-connector.zip"

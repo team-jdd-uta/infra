@@ -18,6 +18,10 @@ variable "ecr_backend_repository_names" {
   type = list(string)
 }
 
+variable "ecr_legacy_repository_names" {
+  type = list(string)
+}
+
 variable "jenkins_git_credentials_id" {
   type = string
 }

@@ -6,6 +6,7 @@ module "cicd" {
   aws_region                                 = var.aws_region
   common_tags                                = var.common_tags
   ecr_backend_repository_names               = var.ecr_backend_repository_names
+  ecr_legacy_repository_names                = var.ecr_legacy_repository_names
   jenkins_git_credentials_id                 = var.jenkins_git_credentials_id
   jenkins_admin_secret_name                  = var.jenkins_admin_secret_name
   jenkins_admin_k8s_secret_name              = var.jenkins_admin_k8s_secret_name
