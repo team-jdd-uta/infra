@@ -27,7 +27,7 @@
   - Argo CD
 - Data
   - RDS MariaDB x3
-  - ElastiCache Redis
+  - MSK Kafka
   - DocumentDB
   - Secrets Manager
 - Observability
@@ -36,7 +36,7 @@
   - SNS Topic
 - CI/CD
   - Jenkins on EKS
-  - External Harbor 연동 전제
+  - ECR 기반 이미지 저장소
 
 ## 디렉터리 구조
 
@@ -92,7 +92,7 @@ infra/
   - RDS: `team9-mini-dev-db-01`
   - RDS: `team9-mini-dev-db-02`
   - RDS: `team9-mini-dev-db-03`
-  - Redis: `team9-mini-dev-redis`
+  - MSK: `team9-mini-dev-msk`
   - DocumentDB: `team9-mini-dev-documentdb`
 
 ## 실행 전 준비
@@ -162,7 +162,7 @@ terraform destroy -var-file=../../environments/dev/global.tfvars
 주의:
 
 - `01-bootstrap`은 마지막에 삭제한다.
-- `CloudFront`, `RDS`, `DocumentDB`, `Redis`는 삭제 시간이 오래 걸릴 수 있다.
+- `CloudFront`, `RDS`, `DocumentDB`, `MSK`는 삭제 시간이 오래 걸릴 수 있다.
 - 실제 운영 환경에서는 destroy 전에 백업 여부를 먼저 확인해야 한다.
 
 ## Git에 올리지 않는 항목
@@ -184,6 +184,6 @@ terraform destroy -var-file=../../environments/dev/global.tfvars
 
 - Argo CD Git repository 연결
 - External Secrets `SecretStore` / `ExternalSecret` 작성
-- Jenkins Harbor credential 연결
+- Jenkins ECR credential / IAM 정책 연결
 - Slack webhook 기반 알람 라우팅 구성
 - 실제 서비스 Ingress / Certificate / DNS 연결

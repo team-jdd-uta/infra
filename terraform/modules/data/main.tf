@@ -12,11 +12,6 @@ resource "aws_docdb_subnet_group" "documentdb" {
   subnet_ids = var.private_data_subnet_ids
 }
 
-resource "aws_elasticache_subnet_group" "redis" {
-  name       = "${var.project_name}-${var.environment}-redis-subnets"
-  subnet_ids = var.private_data_subnet_ids
-}
-
 resource "aws_security_group" "rds" {
   name        = "${var.project_name}-${var.environment}-rds-sg"
   description = "RDS security group"
@@ -37,14 +32,14 @@ resource "aws_security_group" "rds" {
   }
 }
 
-resource "aws_security_group" "redis" {
-  name        = "${var.project_name}-${var.environment}-redis-sg"
-  description = "Redis security group"
+resource "aws_security_group" "msk" {
+  name        = "${var.project_name}-${var.environment}-msk-sg"
+  description = "MSK security group"
   vpc_id      = var.vpc_id
 
   ingress {
-    from_port       = 6379
-    to_port         = 6379
+    from_port       = 9098
+    to_port         = 9098
     protocol        = "tcp"
     security_groups = [var.node_security_group_id]
   }
@@ -124,40 +119,68 @@ resource "aws_db_instance" "mariadb" {
   apply_immediately       = var.environment != "prod"
 }
 
-resource "random_password" "redis_auth" {
-  length  = 32
-  special = false
+resource "aws_msk_configuration" "this" {
+  kafka_versions    = [var.msk_kafka_version]
+  name              = "${var.project_name}-${var.environment}-msk-config"
+  server_properties = <<-EOT
+    auto.create.topics.enable=false
+    default.replication.factor=2
+    min.insync.replicas=2
+    num.partitions=3
+  EOT
 }
 
-resource "aws_secretsmanager_secret" "redis" {
-  name       = "${var.project_name}-${var.environment}-redis-auth"
-  kms_key_id = var.kms_key_arn
+resource "aws_msk_cluster" "this" {
+  cluster_name           = "${var.project_name}-${var.environment}-msk"
+  kafka_version          = var.msk_kafka_version
+  number_of_broker_nodes = var.msk_number_of_broker_nodes
+
+  broker_node_group_info {
+    instance_type   = var.msk_broker_instance_type
+    client_subnets  = var.private_data_subnet_ids
+    security_groups = [aws_security_group.msk.id]
+
+    storage_info {
+      ebs_storage_info {
+        volume_size = 100
+      }
+    }
+  }
+
+  configuration_info {
+    arn      = aws_msk_configuration.this.arn
+    revision = aws_msk_configuration.this.latest_revision
+  }
+
+  encryption_info {
+    encryption_at_rest_kms_key_arn = var.kms_key_arn
+
+    encryption_in_transit {
+      client_broker = "TLS"
+      in_cluster    = true
+    }
+  }
+
+  client_authentication {
+    sasl {
+      iam = true
+    }
+  }
+
+  logging_info {
+    broker_logs {
+      cloudwatch_logs {
+        enabled   = true
+        log_group = aws_cloudwatch_log_group.msk.name
+      }
+    }
+  }
 }
 
-resource "aws_secretsmanager_secret_version" "redis" {
-  secret_id = aws_secretsmanager_secret.redis.id
-  secret_string = jsonencode({
-    auth_token = random_password.redis_auth.result
-  })
-}
-
-resource "aws_elasticache_replication_group" "redis" {
-  replication_group_id       = "${var.project_name}-${var.environment}-redis"
-  description                = "${var.project_name}-${var.environment} redis"
-  engine                     = "redis"
-  engine_version             = "7.1"
-  node_type                  = var.redis_node_type
-  port                       = 6379
-  parameter_group_name       = "default.redis7.cluster.on"
-  num_node_groups            = 2
-  replicas_per_node_group    = 1
-  subnet_group_name          = aws_elasticache_subnet_group.redis.name
-  security_group_ids         = [aws_security_group.redis.id]
-  automatic_failover_enabled = true
-  multi_az_enabled           = true
-  at_rest_encryption_enabled = true
-  transit_encryption_enabled = true
-  auth_token                 = random_password.redis_auth.result
+resource "aws_cloudwatch_log_group" "msk" {
+  name              = "/aws/msk/${var.project_name}-${var.environment}"
+  retention_in_days = 14
+  kms_key_id        = var.kms_key_arn
 }
 
 resource "random_password" "documentdb" {

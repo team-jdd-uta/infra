@@ -50,7 +50,7 @@ terraform/
 5. `05-platform-addons`
    - cert-manager, ESO, ALB controller, ExternalDNS, Argo CD, metrics-server
 6. `06-data`
-   - RDS, Redis, DocumentDB, Secrets Manager
+   - RDS, MSK, DocumentDB, Secrets Manager
 7. `07-observability`
    - Prometheus, Grafana, Loki, SNS
 8. `08-cicd`
@@ -91,4 +91,4 @@ terraform apply -var-file=../../environments/dev/global.tfvars
 - 상위 layer는 하위 layer output만 참조
 - EKS cluster와 add-on 분리
 - 데이터 계층과 플랫폼 계층 분리
-- 외부 Harbor는 Terraform에서 직접 생성하지 않고 연동 정보만 관리
+- ECR 저장소는 Terraform에서 생성하고, Jenkins/워크로드에서 이를 사용한다

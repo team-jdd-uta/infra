@@ -4,4 +4,5 @@ CI/CD 계층을 관리한다.
 
 - Jenkins on EKS
 - ephemeral build agent
-- 외부 Harbor 연동 secret/config
+- ECR repository bootstrap
+- JCasC / Job DSL seed jobs
