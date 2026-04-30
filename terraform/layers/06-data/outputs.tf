@@ -25,3 +25,11 @@ output "msk_bootstrap_brokers_sasl_iam" {
 output "documentdb_cluster_id" {
   value = module.data.documentdb_cluster_id
 }
+
+output "debezium_connector_arns" {
+  value = module.data.debezium_connector_arns
+}
+
+output "debezium_connector_names" {
+  value = module.data.debezium_connector_names
+}

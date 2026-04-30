@@ -27,5 +27,13 @@ output "documentdb_cluster_id" {
 }
 
 output "debezium_connector_arn" {
-  value = try(aws_mskconnect_connector.debezium_source[0].arn, null)
+  value = try(aws_mskconnect_connector.debezium_source["user-service"].arn, null)
+}
+
+output "debezium_connector_arns" {
+  value = { for service, connector in aws_mskconnect_connector.debezium_source : service => connector.arn }
+}
+
+output "debezium_connector_names" {
+  value = { for service, connector in aws_mskconnect_connector.debezium_source : service => connector.name }
 }
