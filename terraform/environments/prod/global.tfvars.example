@@ -6,9 +6,9 @@ terraform_state_region = "ap-northeast-2"
 root_domain_name       = "example.com"
 frontend_domain_name   = "app.example.com"
 cert_manager_email     = "platform@example.com"
-kubernetes_version     = "1.31"
-general_node_instance_types = ["t3.large"]
-build_node_instance_types   = ["m6i.xlarge"]
+kubernetes_version     = "1.34"
+general_node_instance_types = ["t3.medium"]
+build_node_instance_types   = ["m6i.large"]
 msk_broker_instance_type    = "kafka.m7g.large"
 msk_kafka_version           = "3.7.x"
 msk_number_of_broker_nodes  = 3
@@ -22,11 +22,12 @@ ecr_backend_repository_names = [
   "team9-backend-media",
   "team9-backend-admin",
 ]
-jenkins_admin_username         = "admin"
-jenkins_admin_password         = "change-me-admin-password"
 jenkins_git_credentials_id     = "gitops-scm-creds"
-jenkins_git_username           = "example-username"
-jenkins_git_token              = "example-token"
+jenkins_admin_secret_name      = "team9-mini/prod/jenkins/admin"
+jenkins_admin_k8s_secret_name  = "jenkins-admin-credentials"
+jenkins_git_credentials_secret_name = "team9-mini/prod/jenkins/git-credentials"
+jenkins_git_k8s_secret_name    = "jenkins-git-credentials"
+external_secrets_cluster_secret_store_name = "aws-secretsmanager"
 frontend_pipeline_job_name     = "frontend-prod"
 frontend_pipeline_repo_url     = "https://github.com/example-org/team9-frontend.git"
 frontend_pipeline_repo_branch  = "main"

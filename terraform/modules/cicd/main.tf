@@ -1,4 +1,6 @@
 locals {
+  oidc_issuer_url = replace(var.oidc_issuer_url, "https://", "")
+
   enabled_components = {
     jenkins_controller = true
     ephemeral_agents   = true
@@ -7,17 +9,12 @@ locals {
     job_dsl            = true
   }
 
-  ecr_repository_names = concat(
-    [var.ecr_frontend_repository_name],
-    var.ecr_backend_repository_names
-  )
+  ecr_repository_names = distinct(concat(var.ecr_backend_repository_names, var.ecr_legacy_repository_names))
 
   jcasc_config = templatefile("${path.module}/assets/jenkins/jcasc.yaml.tftpl", {
-    jenkins_admin_username     = var.jenkins_admin_username
-    jenkins_admin_password     = var.jenkins_admin_password
-    jenkins_git_credentials_id = var.jenkins_git_credentials_id
-    jenkins_git_username       = var.jenkins_git_username
-    jenkins_git_token          = var.jenkins_git_token
+    jenkins_git_credentials_id        = var.jenkins_git_credentials_id
+    jenkins_git_username_secret_value = format("$${%s-git-username}", var.jenkins_git_k8s_secret_name)
+    jenkins_git_token_secret_value    = format("$${%s-git-token}", var.jenkins_git_k8s_secret_name)
   })
 
   seed_job_script = templatefile("${path.module}/assets/jenkins/jobs/seed.groovy.tftpl", {
@@ -69,6 +66,152 @@ resource "kubernetes_namespace" "jenkins" {
   }
 }
 
+data "aws_iam_policy_document" "jenkins_kaniko_assume_role" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [var.oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_issuer_url}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_issuer_url}:sub"
+      values   = ["system:serviceaccount:${kubernetes_namespace.jenkins.metadata[0].name}:${var.jenkins_kaniko_service_account_name}"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "jenkins_kaniko_ecr_push" {
+  statement {
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:CompleteLayerUpload",
+      "ecr:DescribeRepositories",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart",
+    ]
+    resources = [for repository in aws_ecr_repository.repositories : repository.arn]
+  }
+}
+
+resource "aws_iam_role" "jenkins_kaniko_agent" {
+  name               = "${var.project_name}-${var.environment}-jenkins-kaniko-agent"
+  assume_role_policy = data.aws_iam_policy_document.jenkins_kaniko_assume_role.json
+}
+
+resource "aws_iam_policy" "jenkins_kaniko_ecr_push" {
+  name   = "${var.project_name}-${var.environment}-jenkins-kaniko-ecr-push"
+  policy = data.aws_iam_policy_document.jenkins_kaniko_ecr_push.json
+}
+
+resource "aws_iam_role_policy_attachment" "jenkins_kaniko_ecr_push" {
+  role       = aws_iam_role.jenkins_kaniko_agent.name
+  policy_arn = aws_iam_policy.jenkins_kaniko_ecr_push.arn
+}
+
+resource "kubernetes_service_account" "jenkins_kaniko_agent" {
+  metadata {
+    name      = var.jenkins_kaniko_service_account_name
+    namespace = kubernetes_namespace.jenkins.metadata[0].name
+    annotations = {
+      "eks.amazonaws.com/role-arn" = aws_iam_role.jenkins_kaniko_agent.arn
+    }
+  }
+
+  depends_on = [aws_iam_role_policy_attachment.jenkins_kaniko_ecr_push]
+}
+
+resource "kubernetes_manifest" "jenkins_admin_external_secret" {
+  manifest = {
+    apiVersion = "external-secrets.io/v1"
+    kind       = "ExternalSecret"
+    metadata = {
+      name      = "jenkins-admin"
+      namespace = kubernetes_namespace.jenkins.metadata[0].name
+    }
+    spec = {
+      refreshInterval = "1h"
+      secretStoreRef = {
+        kind = "ClusterSecretStore"
+        name = var.external_secrets_cluster_secret_store_name
+      }
+      target = {
+        name           = var.jenkins_admin_k8s_secret_name
+        creationPolicy = "Owner"
+      }
+      data = [
+        {
+          secretKey = "jenkins-admin-user"
+          remoteRef = {
+            key      = var.jenkins_admin_secret_name
+            property = "username"
+          }
+        },
+        {
+          secretKey = "jenkins-admin-password"
+          remoteRef = {
+            key      = var.jenkins_admin_secret_name
+            property = "password"
+          }
+        },
+      ]
+    }
+  }
+}
+
+resource "kubernetes_manifest" "jenkins_git_credentials_external_secret" {
+  manifest = {
+    apiVersion = "external-secrets.io/v1"
+    kind       = "ExternalSecret"
+    metadata = {
+      name      = "jenkins-git-credentials"
+      namespace = kubernetes_namespace.jenkins.metadata[0].name
+    }
+    spec = {
+      refreshInterval = "1h"
+      secretStoreRef = {
+        kind = "ClusterSecretStore"
+        name = var.external_secrets_cluster_secret_store_name
+      }
+      target = {
+        name           = var.jenkins_git_k8s_secret_name
+        creationPolicy = "Owner"
+      }
+      data = [
+        {
+          secretKey = "git-username"
+          remoteRef = {
+            key      = var.jenkins_git_credentials_secret_name
+            property = "username"
+          }
+        },
+        {
+          secretKey = "git-token"
+          remoteRef = {
+            key      = var.jenkins_git_credentials_secret_name
+            property = "token"
+          }
+        },
+      ]
+    }
+  }
+}
+
 resource "helm_release" "jenkins" {
   name       = "jenkins"
   repository = "https://charts.jenkins.io"
@@ -79,8 +222,8 @@ resource "helm_release" "jenkins" {
     yamlencode({
       controller = {
         admin = {
-          username = var.jenkins_admin_username
-          password = var.jenkins_admin_password
+          createSecret   = false
+          existingSecret = var.jenkins_admin_k8s_secret_name
         }
         installPlugins = [
           "kubernetes",
@@ -92,9 +235,30 @@ resource "helm_release" "jenkins" {
           "plain-credentials",
         ]
         JCasC = {
+          defaultConfig = false
           configScripts = {
             "01-security-and-credentials" = local.jcasc_config
             "02-seed-jobs"                = local.seed_job_script
+          }
+        }
+        additionalExistingSecrets = [
+          {
+            name    = var.jenkins_git_k8s_secret_name
+            keyName = "git-username"
+          },
+          {
+            name    = var.jenkins_git_k8s_secret_name
+            keyName = "git-token"
+          }
+        ]
+        ingress = {
+          enabled          = true
+          ingressClassName = "alb"
+          hostName         = var.jenkins_hostname
+          annotations = {
+            "alb.ingress.kubernetes.io/scheme"          = "internet-facing"
+            "alb.ingress.kubernetes.io/target-type"     = "ip"
+            "external-dns.alpha.kubernetes.io/hostname" = var.jenkins_hostname
           }
         }
       }
@@ -107,5 +271,10 @@ resource "helm_release" "jenkins" {
         storageClass = "gp2"
       }
     })
+  ]
+
+  depends_on = [
+    kubernetes_manifest.jenkins_admin_external_secret,
+    kubernetes_manifest.jenkins_git_credentials_external_secret,
   ]
 }

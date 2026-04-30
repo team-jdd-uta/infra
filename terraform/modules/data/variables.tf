@@ -34,6 +34,46 @@ variable "documentdb_instance_class" {
   type = string
 }
 
+variable "enable_debezium_connector" {
+  type = bool
+}
+
+variable "debezium_plugin_bucket_arn" {
+  type = string
+}
+
+variable "debezium_plugin_file_key" {
+  type = string
+}
+
+variable "msk_connect_kafkaconnect_version" {
+  type = string
+}
+
+variable "debezium_mcu_count" {
+  type = number
+}
+
+variable "debezium_worker_count" {
+  type = number
+}
+
+variable "debezium_tasks_max" {
+  type = number
+}
+
+variable "debezium_database_server_id" {
+  type = string
+}
+
+variable "debezium_database_include_list" {
+  type = string
+}
+
+variable "debezium_topic_prefix" {
+  type = string
+}
+
 variable "vpc_id" {
   type = string
 }

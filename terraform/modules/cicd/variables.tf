@@ -14,7 +14,11 @@ variable "common_tags" {
   type = map(string)
 }
 
-variable "ecr_frontend_repository_name" {
+variable "oidc_provider_arn" {
+  type = string
+}
+
+variable "oidc_issuer_url" {
   type = string
 }
 
@@ -22,27 +26,39 @@ variable "ecr_backend_repository_names" {
   type = list(string)
 }
 
-variable "jenkins_admin_username" {
-  type = string
-}
-
-variable "jenkins_admin_password" {
-  type = string
+variable "ecr_legacy_repository_names" {
+  type = list(string)
 }
 
 variable "jenkins_git_credentials_id" {
   type = string
 }
 
-variable "jenkins_git_username" {
+variable "jenkins_admin_secret_name" {
   type = string
 }
 
-variable "jenkins_git_token" {
+variable "jenkins_admin_k8s_secret_name" {
+  type = string
+}
+
+variable "jenkins_git_credentials_secret_name" {
+  type = string
+}
+
+variable "jenkins_git_k8s_secret_name" {
+  type = string
+}
+
+variable "external_secrets_cluster_secret_store_name" {
   type = string
 }
 
 variable "frontend_pipeline_job_name" {
+  type = string
+}
+
+variable "jenkins_hostname" {
   type = string
 }
 
@@ -65,4 +81,9 @@ variable "backend_pipeline_repositories" {
     branch           = string
     jenkinsfile_path = string
   }))
+}
+
+variable "jenkins_kaniko_service_account_name" {
+  type    = string
+  default = "jenkins-kaniko-agent"
 }

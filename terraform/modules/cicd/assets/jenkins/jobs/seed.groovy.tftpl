@@ -1,36 +1,38 @@
-pipelineJob('${frontend_pipeline_job_name}') {
-  definition {
-    cpsScm {
-      scm {
-        git {
-          remote {
-            url('${frontend_pipeline_repo_url}')
-            credentials('${jenkins_git_credentials_id}')
+jobs:
+  - script: |
+      pipelineJob('${frontend_pipeline_job_name}') {
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('${frontend_pipeline_repo_url}')
+                  credentials('${jenkins_git_credentials_id}')
+                }
+                branch('${frontend_pipeline_repo_branch}')
+              }
+            }
+            scriptPath('${frontend_pipeline_jenkinsfile_path}')
           }
-          branch('${frontend_pipeline_repo_branch}')
         }
       }
-      scriptPath('${frontend_pipeline_jenkinsfile_path}')
-    }
-  }
-}
 
-%{ for repo in backend_pipeline_repositories ~}
-pipelineJob('${repo.job_name}') {
-  definition {
-    cpsScm {
-      scm {
-        git {
-          remote {
-            url('${repo.repo_url}')
-            credentials('${jenkins_git_credentials_id}')
+      %{ for repo in backend_pipeline_repositories ~}
+      pipelineJob('${repo.job_name}') {
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('${repo.repo_url}')
+                  credentials('${jenkins_git_credentials_id}')
+                }
+                branch('${repo.branch}')
+              }
+            }
+            scriptPath('${repo.jenkinsfile_path}')
           }
-          branch('${repo.branch}')
         }
       }
-      scriptPath('${repo.jenkinsfile_path}')
-    }
-  }
-}
 
-%{ endfor ~}
+      %{ endfor ~}

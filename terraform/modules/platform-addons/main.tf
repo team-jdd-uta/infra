@@ -78,6 +78,29 @@ data "aws_iam_policy_document" "cert_manager_assume_role" {
   }
 }
 
+data "aws_iam_policy_document" "external_secrets_assume_role" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [var.oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(var.oidc_issuer_url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:external-secrets:external-secrets"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(var.oidc_issuer_url, "https://", "")}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
 data "aws_iam_policy_document" "alb_controller" {
   statement {
     actions = [
@@ -142,6 +165,18 @@ data "aws_iam_policy_document" "cert_manager" {
   }
 }
 
+data "aws_iam_policy_document" "external_secrets" {
+  statement {
+    actions = [
+      "secretsmanager:DescribeSecret",
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:ListSecretVersionIds",
+    ]
+
+    resources = ["*"]
+  }
+}
+
 resource "aws_iam_role" "alb_controller" {
   name               = "${var.project_name}-${var.environment}-alb-controller-role"
   assume_role_policy = data.aws_iam_policy_document.alb_controller_assume_role.json
@@ -177,14 +212,29 @@ resource "aws_iam_role" "cert_manager" {
   assume_role_policy = data.aws_iam_policy_document.cert_manager_assume_role.json
 }
 
+resource "aws_iam_role" "external_secrets" {
+  name               = "${var.project_name}-${var.environment}-external-secrets-role"
+  assume_role_policy = data.aws_iam_policy_document.external_secrets_assume_role.json
+}
+
 resource "aws_iam_policy" "cert_manager" {
   name   = "${var.project_name}-${var.environment}-cert-manager-policy"
   policy = data.aws_iam_policy_document.cert_manager.json
 }
 
+resource "aws_iam_policy" "external_secrets" {
+  name   = "${var.project_name}-${var.environment}-external-secrets-policy"
+  policy = data.aws_iam_policy_document.external_secrets.json
+}
+
 resource "aws_iam_role_policy_attachment" "cert_manager" {
   role       = aws_iam_role.cert_manager.name
   policy_arn = aws_iam_policy.cert_manager.arn
+}
+
+resource "aws_iam_role_policy_attachment" "external_secrets" {
+  role       = aws_iam_role.external_secrets.name
+  policy_arn = aws_iam_policy.external_secrets.arn
 }
 
 resource "kubernetes_namespace" "external_secrets" {
@@ -260,6 +310,46 @@ resource "helm_release" "external_secrets" {
   repository = "https://charts.external-secrets.io"
   chart      = "external-secrets"
   namespace  = kubernetes_namespace.external_secrets.metadata[0].name
+
+  values = [
+    yamlencode({
+      serviceAccount = {
+        create = true
+        name   = "external-secrets"
+        annotations = {
+          "eks.amazonaws.com/role-arn" = aws_iam_role.external_secrets.arn
+        }
+      }
+    })
+  ]
+}
+
+resource "kubernetes_manifest" "external_secrets_cluster_secret_store" {
+  manifest = {
+    apiVersion = "external-secrets.io/v1"
+    kind       = "ClusterSecretStore"
+    metadata = {
+      name = "aws-secretsmanager"
+    }
+    spec = {
+      provider = {
+        aws = {
+          service = "SecretsManager"
+          region  = var.aws_region
+          auth = {
+            jwt = {
+              serviceAccountRef = {
+                name      = "external-secrets"
+                namespace = kubernetes_namespace.external_secrets.metadata[0].name
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [helm_release.external_secrets]
 }
 
 resource "helm_release" "cert_manager" {
@@ -270,6 +360,9 @@ resource "helm_release" "cert_manager" {
 
   values = [
     yamlencode({
+      crds = {
+        enabled = true
+      }
       serviceAccount = {
         create = true
         name   = "cert-manager"
@@ -279,11 +372,6 @@ resource "helm_release" "cert_manager" {
       }
     })
   ]
-
-  set {
-    name  = "crds.enabled"
-    value = "true"
-  }
 }
 
 resource "kubernetes_manifest" "cert_manager_cluster_issuer" {

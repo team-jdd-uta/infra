@@ -30,7 +30,7 @@ variable "msk_broker_instance_type" {
 
 variable "msk_kafka_version" {
   type    = string
-  default = "3.7.x"
+  default = "3.7.x.kraft"
 }
 
 variable "msk_number_of_broker_nodes" {
@@ -43,9 +43,59 @@ variable "documentdb_instance_class" {
   default = "db.r6g.large"
 }
 
+variable "enable_debezium_connector" {
+  type    = bool
+  default = false
+}
+
+variable "debezium_plugin_bucket_arn" {
+  type    = string
+  default = ""
+}
+
+variable "debezium_plugin_file_key" {
+  type    = string
+  default = ""
+}
+
+variable "msk_connect_kafkaconnect_version" {
+  type    = string
+  default = "3.7.x"
+}
+
+variable "debezium_mcu_count" {
+  type    = number
+  default = 1
+}
+
+variable "debezium_worker_count" {
+  type    = number
+  default = 1
+}
+
+variable "debezium_tasks_max" {
+  type    = number
+  default = 1
+}
+
+variable "debezium_database_server_id" {
+  type    = string
+  default = "5401"
+}
+
+variable "debezium_database_include_list" {
+  type    = string
+  default = "app1"
+}
+
+variable "debezium_topic_prefix" {
+  type    = string
+  default = "team9.dbserver1"
+}
+
 variable "terraform_state_bucket" {
   type    = string
-  default = "team9-mini-terraform-state-dev"
+  default = "team9-mini-dev-terraform-state"
 }
 
 variable "terraform_state_region" {

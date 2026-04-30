@@ -18,32 +18,24 @@ variable "common_tags" {
   default = {}
 }
 
-variable "ecr_frontend_repository_name" {
-  type    = string
-  default = "team9-frontend"
-}
-
 variable "ecr_backend_repository_names" {
   type = list(string)
   default = [
-    "team9-backend-api-gateway",
-    "team9-backend-auth",
-    "team9-backend-user",
-    "team9-backend-chat",
-    "team9-backend-notification",
-    "team9-backend-media",
-    "team9-backend-admin",
+    "team9-user-service",
+    "team9-redis-stream-mongo-consumer",
+    "team9-login-service",
+    "team9-socket-io-gateway",
+    "team9-chat-service",
+    "team9-room-service",
   ]
 }
 
-variable "jenkins_admin_username" {
-  type    = string
-  default = "admin"
-}
-
-variable "jenkins_admin_password" {
-  type    = string
-  default = "change-me-admin-password"
+variable "ecr_legacy_repository_names" {
+  type = list(string)
+  default = [
+    "team9-ui-vue",
+    "team9-debezium-connect",
+  ]
 }
 
 variable "jenkins_git_credentials_id" {
@@ -51,14 +43,29 @@ variable "jenkins_git_credentials_id" {
   default = "gitops-scm-creds"
 }
 
-variable "jenkins_git_username" {
+variable "jenkins_admin_secret_name" {
   type    = string
-  default = "example-username"
+  default = "team9-mini/dev/jenkins/admin"
 }
 
-variable "jenkins_git_token" {
+variable "jenkins_admin_k8s_secret_name" {
   type    = string
-  default = "example-token"
+  default = "jenkins-admin-credentials"
+}
+
+variable "jenkins_git_credentials_secret_name" {
+  type    = string
+  default = "team9-mini/dev/jenkins/git-credentials"
+}
+
+variable "jenkins_git_k8s_secret_name" {
+  type    = string
+  default = "jenkins-git-credentials"
+}
+
+variable "external_secrets_cluster_secret_store_name" {
+  type    = string
+  default = "aws-secretsmanager"
 }
 
 variable "frontend_pipeline_job_name" {
@@ -66,9 +73,14 @@ variable "frontend_pipeline_job_name" {
   default = "frontend-dev"
 }
 
+variable "jenkins_hostname" {
+  type    = string
+  default = "jenkins.team9.cloud.skala-ai.com"
+}
+
 variable "frontend_pipeline_repo_url" {
   type    = string
-  default = "https://github.com/example-org/team9-frontend.git"
+  default = "https://github.com/team-jdd-uta/frontend-ui-vue.git"
 }
 
 variable "frontend_pipeline_repo_branch" {
@@ -90,53 +102,47 @@ variable "backend_pipeline_repositories" {
   }))
   default = [
     {
-      job_name         = "backend-api-gateway-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-api-gateway.git"
+      job_name         = "backend-user-service-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-user-service.git"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
     {
-      job_name         = "backend-auth-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-auth.git"
+      job_name         = "backend-redis-stream-mongo-consumer-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-redis-stream-mongo-consumer.git"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
     {
-      job_name         = "backend-user-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-user.git"
+      job_name         = "backend-login-service-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-login-service.git"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
     {
-      job_name         = "backend-chat-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-chat.git"
+      job_name         = "backend-socket-io-gateway-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-socket-io-gateway.git"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
     {
-      job_name         = "backend-notification-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-notification.git"
+      job_name         = "backend-chat-service-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-chat-service.git"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
     {
-      job_name         = "backend-media-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-media.git"
+      job_name         = "backend-room-service-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-room-service.git"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
-    },
-    {
-      job_name         = "backend-admin-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-admin.git"
-      branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
   ]
 }
 
 variable "terraform_state_bucket" {
   type    = string
-  default = "team9-mini-terraform-state-dev"
+  default = "team9-mini-dev-terraform-state"
 }
 
 variable "terraform_state_region" {
@@ -147,4 +153,9 @@ variable "terraform_state_region" {
 variable "platform_state_key" {
   type    = string
   default = "04-platform-eks/terraform.tfstate"
+}
+
+variable "jenkins_kaniko_service_account_name" {
+  type    = string
+  default = "jenkins-kaniko-agent"
 }
