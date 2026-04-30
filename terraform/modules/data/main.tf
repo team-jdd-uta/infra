@@ -10,6 +10,23 @@ resource "aws_db_subnet_group" "mariadb" {
   subnet_ids = var.private_data_subnet_ids
 }
 
+resource "aws_db_parameter_group" "mariadb" {
+  name   = "${var.project_name}-${var.environment}-mariadb-params"
+  family = "mariadb10.11"
+
+  parameter {
+    name         = "binlog_format"
+    value        = "ROW"
+    apply_method = "pending-reboot"
+  }
+
+  parameter {
+    name         = "binlog_row_image"
+    value        = "FULL"
+    apply_method = "pending-reboot"
+  }
+}
+
 resource "aws_docdb_subnet_group" "documentdb" {
   name       = "${var.project_name}-${var.environment}-documentdb-subnets"
   subnet_ids = var.private_data_subnet_ids
@@ -19,13 +36,6 @@ resource "aws_security_group" "rds" {
   name        = "${var.project_name}-${var.environment}-rds-sg"
   description = "RDS security group"
   vpc_id      = var.vpc_id
-
-  ingress {
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [var.node_security_group_id]
-  }
 
   egress {
     from_port   = 0
@@ -39,13 +49,6 @@ resource "aws_security_group" "msk" {
   name        = "${var.project_name}-${var.environment}-msk-sg"
   description = "MSK security group"
   vpc_id      = var.vpc_id
-
-  ingress {
-    from_port       = 9098
-    to_port         = 9098
-    protocol        = "tcp"
-    security_groups = [var.node_security_group_id]
-  }
 
   egress {
     from_port   = 0
@@ -77,6 +80,15 @@ resource "aws_security_group_rule" "rds_from_msk_connect" {
   source_security_group_id = aws_security_group.msk_connect.id
 }
 
+resource "aws_security_group_rule" "rds_from_nodes" {
+  type                     = "ingress"
+  from_port                = 3306
+  to_port                  = 3306
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.rds.id
+  source_security_group_id = var.node_security_group_id
+}
+
 resource "aws_security_group_rule" "msk_from_msk_connect" {
   type                     = "ingress"
   from_port                = 9098
@@ -86,17 +98,19 @@ resource "aws_security_group_rule" "msk_from_msk_connect" {
   source_security_group_id = aws_security_group.msk_connect.id
 }
 
+resource "aws_security_group_rule" "msk_from_nodes" {
+  type                     = "ingress"
+  from_port                = 9098
+  to_port                  = 9098
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.msk.id
+  source_security_group_id = var.node_security_group_id
+}
+
 resource "aws_security_group" "documentdb" {
   name        = "${var.project_name}-${var.environment}-documentdb-sg"
   description = "DocumentDB security group"
   vpc_id      = var.vpc_id
-
-  ingress {
-    from_port       = 27017
-    to_port         = 27017
-    protocol        = "tcp"
-    security_groups = [var.node_security_group_id]
-  }
 
   egress {
     from_port   = 0
@@ -104,6 +118,15 @@ resource "aws_security_group" "documentdb" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+resource "aws_security_group_rule" "documentdb_from_nodes" {
+  type                     = "ingress"
+  from_port                = 27017
+  to_port                  = 27017
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.documentdb.id
+  source_security_group_id = var.node_security_group_id
 }
 
 resource "random_password" "rds" {
@@ -116,6 +139,7 @@ resource "aws_secretsmanager_secret" "rds" {
   count       = var.db_instance_count
   name        = "${local.db_names[count.index]}-credentials"
   description = "RDS credentials for ${local.db_names[count.index]}"
+  kms_key_id  = var.kms_key_arn
 }
 
 resource "aws_secretsmanager_secret_version" "rds" {
@@ -139,6 +163,7 @@ resource "aws_db_instance" "mariadb" {
   allocated_storage       = 50
   max_allocated_storage   = 200
   db_subnet_group_name    = aws_db_subnet_group.mariadb.name
+  parameter_group_name    = aws_db_parameter_group.mariadb.name
   vpc_security_group_ids  = [aws_security_group.rds.id]
   username                = "admin"
   password                = random_password.rds[count.index].result
@@ -323,19 +348,19 @@ resource "aws_mskconnect_connector" "debezium_source" {
   }
 
   connector_configuration = {
-    "connector.class"                                 = "io.debezium.connector.mysql.MySqlConnector"
-    "database.hostname"                               = aws_db_instance.mariadb[0].address
-    "database.port"                                   = "3306"
-    "database.user"                                   = "admin"
-    "database.password"                               = random_password.rds[0].result
-    "database.server.id"                              = var.debezium_database_server_id
-    "database.server.name"                            = "${var.project_name}-${var.environment}-mariadb"
-    "database.include.list"                           = var.debezium_database_include_list
-    "topic.prefix"                                    = var.debezium_topic_prefix
-    "include.schema.changes"                          = "false"
-    "tasks.max"                                       = tostring(var.debezium_tasks_max)
-    "schema.history.internal.kafka.bootstrap.servers" = aws_msk_cluster.this.bootstrap_brokers_sasl_iam
-    "schema.history.internal.kafka.topic"             = "${var.debezium_topic_prefix}.schema-history"
+    "connector.class"                          = "io.debezium.connector.mysql.MySqlConnector"
+    "database.hostname"                        = aws_db_instance.mariadb[0].address
+    "database.port"                            = "3306"
+    "database.user"                            = "admin"
+    "database.password"                        = random_password.rds[0].result
+    "database.server.id"                       = var.debezium_database_server_id
+    "database.server.name"                     = "${var.project_name}-${var.environment}-mariadb"
+    "database.include.list"                    = var.debezium_database_include_list
+    "topic.prefix"                             = var.debezium_topic_prefix
+    "include.schema.changes"                   = "false"
+    "tasks.max"                                = tostring(var.debezium_tasks_max)
+    "database.history.kafka.bootstrap.servers" = aws_msk_cluster.this.bootstrap_brokers_sasl_iam
+    "database.history.kafka.topic"             = "${var.debezium_topic_prefix}.schema-history"
   }
 
   kafka_cluster {
@@ -387,7 +412,8 @@ resource "random_password" "documentdb" {
 }
 
 resource "aws_secretsmanager_secret" "documentdb" {
-  name = "${var.project_name}-${var.environment}-documentdb-credentials"
+  name       = "${var.project_name}-${var.environment}-documentdb-credentials"
+  kms_key_id = var.kms_key_arn
 }
 
 resource "aws_secretsmanager_secret_version" "documentdb" {

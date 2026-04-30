@@ -1,4 +1,6 @@
 locals {
+  oidc_issuer_url = replace(var.oidc_issuer_url, "https://", "")
+
   enabled_components = {
     jenkins_controller = true
     ephemeral_agents   = true
@@ -62,6 +64,76 @@ resource "kubernetes_namespace" "jenkins" {
   metadata {
     name = "jenkins"
   }
+}
+
+data "aws_iam_policy_document" "jenkins_kaniko_assume_role" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [var.oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_issuer_url}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_issuer_url}:sub"
+      values   = ["system:serviceaccount:${kubernetes_namespace.jenkins.metadata[0].name}:${var.jenkins_kaniko_service_account_name}"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "jenkins_kaniko_ecr_push" {
+  statement {
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:CompleteLayerUpload",
+      "ecr:DescribeRepositories",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart",
+    ]
+    resources = [for repository in aws_ecr_repository.repositories : repository.arn]
+  }
+}
+
+resource "aws_iam_role" "jenkins_kaniko_agent" {
+  name               = "${var.project_name}-${var.environment}-jenkins-kaniko-agent"
+  assume_role_policy = data.aws_iam_policy_document.jenkins_kaniko_assume_role.json
+}
+
+resource "aws_iam_policy" "jenkins_kaniko_ecr_push" {
+  name   = "${var.project_name}-${var.environment}-jenkins-kaniko-ecr-push"
+  policy = data.aws_iam_policy_document.jenkins_kaniko_ecr_push.json
+}
+
+resource "aws_iam_role_policy_attachment" "jenkins_kaniko_ecr_push" {
+  role       = aws_iam_role.jenkins_kaniko_agent.name
+  policy_arn = aws_iam_policy.jenkins_kaniko_ecr_push.arn
+}
+
+resource "kubernetes_service_account" "jenkins_kaniko_agent" {
+  metadata {
+    name      = var.jenkins_kaniko_service_account_name
+    namespace = kubernetes_namespace.jenkins.metadata[0].name
+    annotations = {
+      "eks.amazonaws.com/role-arn" = aws_iam_role.jenkins_kaniko_agent.arn
+    }
+  }
+
+  depends_on = [aws_iam_role_policy_attachment.jenkins_kaniko_ecr_push]
 }
 
 resource "kubernetes_manifest" "jenkins_admin_external_secret" {

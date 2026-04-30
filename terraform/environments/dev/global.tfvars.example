@@ -13,7 +13,6 @@ msk_broker_instance_type    = "kafka.m7g.large"
 msk_kafka_version           = "3.7.x.kraft"
 msk_number_of_broker_nodes  = 2
 ecr_backend_repository_names = [
-  "team9-kafka-outbox",
   "team9-user-service",
   "team9-redis-stream-mongo-consumer",
   "team9-login-service",
@@ -25,10 +24,10 @@ ecr_legacy_repository_names = [
   "team9-ui-vue",
   "team9-debezium-connect",
 ]
-enable_debezium_connector = false
-debezium_plugin_bucket_arn = "arn:aws:s3:::REPLACE_ME"
-debezium_plugin_file_key   = "plugins/debezium-connector.zip"
-msk_connect_kafkaconnect_version = "3.7.x"
+enable_debezium_connector        = true
+debezium_plugin_bucket_arn       = "arn:aws:s3:::881490135253-msk-connect-plugins"
+debezium_plugin_file_key         = "debezium/debezium-connector-mysql-1.9.7.Final-msk.zip"
+msk_connect_kafkaconnect_version = "2.7.1"
 debezium_mcu_count         = 1
 debezium_worker_count      = 1
 debezium_tasks_max         = 1
@@ -47,12 +46,6 @@ frontend_pipeline_repo_url     = "https://github.com/team-jdd-uta/frontend-ui-vu
 frontend_pipeline_repo_branch  = "main"
 frontend_pipeline_jenkinsfile_path = "jenkins/Jenkinsfile"
 backend_pipeline_repositories = [
-  {
-    job_name         = "backend-kafka-outbox-dev"
-    repo_url         = "https://github.com/team-jdd-uta/backend-kafka-outbox"
-    branch           = "main"
-    jenkinsfile_path = "jenkins/Jenkinsfile"
-  },
   {
     job_name         = "backend-user-service-dev"
     repo_url         = "https://github.com/team-jdd-uta/backend-user-service.git"

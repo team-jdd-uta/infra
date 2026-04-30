@@ -14,6 +14,14 @@ variable "common_tags" {
   type = map(string)
 }
 
+variable "oidc_provider_arn" {
+  type = string
+}
+
+variable "oidc_issuer_url" {
+  type = string
+}
+
 variable "ecr_backend_repository_names" {
   type = list(string)
 }
@@ -73,4 +81,9 @@ variable "backend_pipeline_repositories" {
     branch           = string
     jenkinsfile_path = string
   }))
+}
+
+variable "jenkins_kaniko_service_account_name" {
+  type    = string
+  default = "jenkins-kaniko-agent"
 }

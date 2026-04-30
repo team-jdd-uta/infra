@@ -5,6 +5,8 @@ module "cicd" {
   environment                                = var.environment
   aws_region                                 = var.aws_region
   common_tags                                = var.common_tags
+  oidc_provider_arn                          = data.terraform_remote_state.platform.outputs.oidc_provider_arn
+  oidc_issuer_url                            = data.terraform_remote_state.platform.outputs.oidc_issuer_url
   ecr_backend_repository_names               = var.ecr_backend_repository_names
   ecr_legacy_repository_names                = var.ecr_legacy_repository_names
   jenkins_git_credentials_id                 = var.jenkins_git_credentials_id
@@ -19,4 +21,5 @@ module "cicd" {
   frontend_pipeline_repo_branch              = var.frontend_pipeline_repo_branch
   frontend_pipeline_jenkinsfile_path         = var.frontend_pipeline_jenkinsfile_path
   backend_pipeline_repositories              = var.backend_pipeline_repositories
+  jenkins_kaniko_service_account_name        = var.jenkins_kaniko_service_account_name
 }

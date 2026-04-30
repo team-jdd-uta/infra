@@ -21,7 +21,6 @@ variable "common_tags" {
 variable "ecr_backend_repository_names" {
   type = list(string)
   default = [
-    "team9-kafka-outbox",
     "team9-user-service",
     "team9-redis-stream-mongo-consumer",
     "team9-login-service",
@@ -103,12 +102,6 @@ variable "backend_pipeline_repositories" {
   }))
   default = [
     {
-      job_name         = "backend-kafka-outbox-dev"
-      repo_url         = "https://github.com/team-jdd-uta/backend-kafka-outbox"
-      branch           = "main"
-      jenkinsfile_path = "jenkins/Jenkinsfile"
-    },
-    {
       job_name         = "backend-user-service-dev"
       repo_url         = "https://github.com/team-jdd-uta/backend-user-service.git"
       branch           = "main"
@@ -160,4 +153,9 @@ variable "terraform_state_region" {
 variable "platform_state_key" {
   type    = string
   default = "04-platform-eks/terraform.tfstate"
+}
+
+variable "jenkins_kaniko_service_account_name" {
+  type    = string
+  default = "jenkins-kaniko-agent"
 }
