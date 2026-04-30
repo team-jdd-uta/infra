@@ -87,3 +87,18 @@ variable "jenkins_kaniko_service_account_name" {
   type    = string
   default = "jenkins-kaniko-agent"
 }
+
+variable "jenkins_obsolete_job_names" {
+  type        = list(string)
+  description = "Previously generated Jenkins jobs to delete during controller startup."
+  default = [
+    "backend-kafka-outbox-dev",
+    "chat-service-dev",
+    "debezium-connect-dev",
+    "login-service-dev",
+    "redis-stream-mongo-consumer-dev",
+    "room-service-dev",
+    "socket-io-gateway-dev",
+    "user-service-dev",
+  ]
+}

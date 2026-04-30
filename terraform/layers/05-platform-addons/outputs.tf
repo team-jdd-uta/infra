@@ -13,3 +13,7 @@ output "external_secrets_role_arn" {
 output "cluster_secret_store_name" {
   value = module.platform_addons.cluster_secret_store_name
 }
+
+output "argocd_url" {
+  value = module.platform_addons.argocd_url
+}

@@ -12,9 +12,15 @@ locals {
   ecr_repository_names = distinct(concat(var.ecr_backend_repository_names, var.ecr_legacy_repository_names))
 
   jcasc_config = templatefile("${path.module}/assets/jenkins/jcasc.yaml.tftpl", {
-    jenkins_git_credentials_id        = var.jenkins_git_credentials_id
-    jenkins_git_username_secret_value = format("$${%s-git-username}", var.jenkins_git_k8s_secret_name)
-    jenkins_git_token_secret_value    = format("$${%s-git-token}", var.jenkins_git_k8s_secret_name)
+    jenkins_git_credentials_id          = var.jenkins_git_credentials_id
+    jenkins_git_username_secret_value   = format("$${%s-git-username}", var.jenkins_git_k8s_secret_name)
+    jenkins_git_token_secret_value      = format("$${%s-git-token}", var.jenkins_git_k8s_secret_name)
+    jenkins_admin_username_secret_value = format("$${%s-chart-admin-username}", var.jenkins_admin_k8s_secret_name)
+    jenkins_admin_password_secret_value = format("$${%s-chart-admin-password}", var.jenkins_admin_k8s_secret_name)
+    jenkins_namespace                   = "jenkins"
+    jenkins_url                         = "http://jenkins.jenkins.svc.cluster.local:8080"
+    jenkins_tunnel                      = "jenkins-agent.jenkins.svc.cluster.local:50000"
+    jenkins_agent_service_account       = var.jenkins_kaniko_service_account_name
   })
 
   seed_job_script = templatefile("${path.module}/assets/jenkins/jobs/seed.groovy.tftpl", {
@@ -25,6 +31,23 @@ locals {
     jenkins_git_credentials_id         = var.jenkins_git_credentials_id
     backend_pipeline_repositories      = var.backend_pipeline_repositories
   })
+
+  cleanup_obsolete_jobs_script = <<-GROOVY
+    import jenkins.model.Jenkins
+
+    def obsoleteJobs = ${jsonencode(var.jenkins_obsolete_job_names)}
+    def instance = Jenkins.get()
+
+    obsoleteJobs.each { jobName ->
+      def item = instance.getItemByFullName(jobName)
+      if (item != null) {
+        println("Deleting obsolete Jenkins job '$${jobName}'")
+        item.delete()
+      }
+    }
+
+    instance.save()
+  GROOVY
 }
 
 resource "aws_ecr_repository" "repositories" {
@@ -156,14 +179,14 @@ resource "kubernetes_manifest" "jenkins_admin_external_secret" {
       }
       data = [
         {
-          secretKey = "jenkins-admin-user"
+          secretKey = "chart-admin-username"
           remoteRef = {
             key      = var.jenkins_admin_secret_name
             property = "username"
           }
         },
         {
-          secretKey = "jenkins-admin-password"
+          secretKey = "chart-admin-password"
           remoteRef = {
             key      = var.jenkins_admin_secret_name
             property = "password"
@@ -233,7 +256,11 @@ resource "helm_release" "jenkins" {
           "job-dsl",
           "credentials",
           "plain-credentials",
+          "timestamper",
         ]
+        initScripts = {
+          "delete-obsolete-generated-jobs" = local.cleanup_obsolete_jobs_script
+        }
         JCasC = {
           defaultConfig = false
           configScripts = {
@@ -242,6 +269,14 @@ resource "helm_release" "jenkins" {
           }
         }
         additionalExistingSecrets = [
+          {
+            name    = var.jenkins_admin_k8s_secret_name
+            keyName = "chart-admin-username"
+          },
+          {
+            name    = var.jenkins_admin_k8s_secret_name
+            keyName = "chart-admin-password"
+          },
           {
             name    = var.jenkins_git_k8s_secret_name
             keyName = "git-username"
@@ -263,7 +298,10 @@ resource "helm_release" "jenkins" {
         }
       }
       agent = {
-        enabled = true
+        enabled       = true
+        namespace     = kubernetes_namespace.jenkins.metadata[0].name
+        jenkinsUrl    = "http://jenkins.${kubernetes_namespace.jenkins.metadata[0].name}.svc.cluster.local:8080"
+        jenkinsTunnel = "jenkins-agent.${kubernetes_namespace.jenkins.metadata[0].name}.svc.cluster.local:50000"
       }
       persistence = {
         enabled      = true

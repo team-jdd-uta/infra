@@ -52,3 +52,8 @@ variable "cert_manager_email" {
   type    = string
   default = "platform@example.com"
 }
+
+variable "argocd_hostname" {
+  type    = string
+  default = "argocd.team9.cloud.skala-ai.com"
+}

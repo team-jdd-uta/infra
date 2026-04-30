@@ -11,4 +11,5 @@ module "platform_addons" {
   vpc_id             = data.terraform_remote_state.foundation.outputs.vpc_id
   root_domain_name   = var.root_domain_name
   cert_manager_email = var.cert_manager_email
+  argocd_hostname    = var.argocd_hostname
 }

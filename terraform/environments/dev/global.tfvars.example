@@ -5,6 +5,7 @@ terraform_state_bucket = "team9-mini-dev-terraform-state"
 terraform_state_region = "ap-northeast-2"
 root_domain_name       = "skala-ai.com"
 frontend_domain_name   = "front.team9.cloud.skala-ai.com"
+argocd_hostname        = "argocd.team9.cloud.skala-ai.com"
 cert_manager_email     = "skala@sk.com"
 kubernetes_version     = "1.34"
 general_node_instance_types = ["t3.medium"]

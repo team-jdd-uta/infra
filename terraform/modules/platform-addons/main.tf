@@ -409,4 +409,25 @@ resource "helm_release" "argocd" {
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
   namespace  = kubernetes_namespace.argocd.metadata[0].name
+
+  values = [
+    yamlencode({
+      global = {
+        domain = var.argocd_hostname
+      }
+      server = {
+        extraArgs = ["--insecure"]
+        ingress = {
+          enabled          = true
+          ingressClassName = "alb"
+          hostname         = var.argocd_hostname
+          annotations = {
+            "alb.ingress.kubernetes.io/scheme"          = "internet-facing"
+            "alb.ingress.kubernetes.io/target-type"     = "ip"
+            "external-dns.alpha.kubernetes.io/hostname" = var.argocd_hostname
+          }
+        }
+      }
+    })
+  ]
 }
