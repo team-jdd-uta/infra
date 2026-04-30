@@ -13,3 +13,7 @@ output "cloudfront_distribution_domain_name" {
 output "frontend_certificate_arn" {
   value = aws_acm_certificate_validation.frontend.certificate_arn
 }
+
+output "alb_ingress_certificate_arn" {
+  value = aws_acm_certificate_validation.alb_ingress.certificate_arn
+}

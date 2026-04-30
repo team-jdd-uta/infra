@@ -28,6 +28,11 @@ variable "frontend_domain_name" {
   default = "app.example.com"
 }
 
+variable "ingress_wildcard_domain_name" {
+  type    = string
+  default = "*.example.com"
+}
+
 variable "price_class" {
   type    = string
   default = "PriceClass_200"
