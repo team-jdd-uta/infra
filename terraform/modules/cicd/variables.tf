@@ -14,10 +14,6 @@ variable "common_tags" {
   type = map(string)
 }
 
-variable "ecr_frontend_repository_name" {
-  type = string
-}
-
 variable "ecr_backend_repository_names" {
   type = list(string)
 }
@@ -47,6 +43,10 @@ variable "external_secrets_cluster_secret_store_name" {
 }
 
 variable "frontend_pipeline_job_name" {
+  type = string
+}
+
+variable "jenkins_hostname" {
   type = string
 }
 

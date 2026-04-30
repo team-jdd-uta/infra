@@ -7,10 +7,7 @@ locals {
     job_dsl            = true
   }
 
-  ecr_repository_names = concat(
-    [var.ecr_frontend_repository_name],
-    var.ecr_backend_repository_names
-  )
+  ecr_repository_names = var.ecr_backend_repository_names
 
   jcasc_config = templatefile("${path.module}/assets/jenkins/jcasc.yaml.tftpl", {
     jenkins_git_credentials_id        = var.jenkins_git_credentials_id
@@ -69,7 +66,7 @@ resource "kubernetes_namespace" "jenkins" {
 
 resource "kubernetes_manifest" "jenkins_admin_external_secret" {
   manifest = {
-    apiVersion = "external-secrets.io/v1beta1"
+    apiVersion = "external-secrets.io/v1"
     kind       = "ExternalSecret"
     metadata = {
       name      = "jenkins-admin"
@@ -107,7 +104,7 @@ resource "kubernetes_manifest" "jenkins_admin_external_secret" {
 
 resource "kubernetes_manifest" "jenkins_git_credentials_external_secret" {
   manifest = {
-    apiVersion = "external-secrets.io/v1beta1"
+    apiVersion = "external-secrets.io/v1"
     kind       = "ExternalSecret"
     metadata = {
       name      = "jenkins-git-credentials"
@@ -166,6 +163,7 @@ resource "helm_release" "jenkins" {
           "plain-credentials",
         ]
         JCasC = {
+          defaultConfig = false
           configScripts = {
             "01-security-and-credentials" = local.jcasc_config
             "02-seed-jobs"                = local.seed_job_script
@@ -173,9 +171,23 @@ resource "helm_release" "jenkins" {
         }
         additionalExistingSecrets = [
           {
-            name = var.jenkins_git_k8s_secret_name
+            name    = var.jenkins_git_k8s_secret_name
+            keyName = "git-username"
+          },
+          {
+            name    = var.jenkins_git_k8s_secret_name
+            keyName = "git-token"
           }
         ]
+        ingress = {
+          enabled          = true
+          ingressClassName = "alb"
+          hostName         = var.jenkins_hostname
+          annotations = {
+            "alb.ingress.kubernetes.io/scheme"          = "internet-facing"
+            "external-dns.alpha.kubernetes.io/hostname" = var.jenkins_hostname
+          }
+        }
       }
       agent = {
         enabled = true

@@ -10,18 +10,28 @@ kubernetes_version     = "1.34"
 general_node_instance_types = ["t3.medium"]
 build_node_instance_types   = ["m6i.large"]
 msk_broker_instance_type    = "kafka.m7g.large"
-msk_kafka_version           = "3.7.x"
+msk_kafka_version           = "3.7.x.kraft"
 msk_number_of_broker_nodes  = 2
-ecr_frontend_repository_name = "team9-ui-vue"
 ecr_backend_repository_names = [
-  "team9-login-service",
-  "team9-chat-service",
-  "team9-room-service",
+  "team9-kafka-outbox",
   "team9-user-service",
   "team9-redis-stream-mongo-consumer",
-  "team9-debezium-connect",
+  "team9-login-service",
   "team9-socket-io-gateway",
+  "team9-chat-service",
+  "team9-room-service",
 ]
+enable_debezium_connector = false
+debezium_plugin_bucket_arn = "arn:aws:s3:::REPLACE_ME"
+debezium_plugin_file_key   = "plugins/debezium-connector.zip"
+msk_connect_kafkaconnect_version = "3.7.x"
+debezium_mcu_count         = 1
+debezium_worker_count      = 1
+debezium_tasks_max         = 1
+debezium_database_server_id    = "5401"
+debezium_database_include_list = "app1"
+debezium_topic_prefix          = "team9.dbserver1"
+jenkins_hostname               = "jenkins.team9.cloud.skala-ai.com"
 jenkins_git_credentials_id     = "github-scm"
 jenkins_admin_secret_name      = "team9-mini/dev/jenkins/admin"
 jenkins_admin_k8s_secret_name  = "jenkins-admin-credentials"
@@ -34,44 +44,44 @@ frontend_pipeline_repo_branch  = "main"
 frontend_pipeline_jenkinsfile_path = "jenkins/Jenkinsfile"
 backend_pipeline_repositories = [
   {
-    job_name         = "login-service-dev"
-    repo_url         = "https://github.com/team-jdd-uta/login-service.git"
+    job_name         = "backend-kafka-outbox-dev"
+    repo_url         = "https://github.com/team-jdd-uta/backend-kafka-outbox"
     branch           = "main"
     jenkinsfile_path = "jenkins/Jenkinsfile"
   },
   {
-    job_name         = "chat-service-dev"
-    repo_url         = "https://github.com/team-jdd-uta/chat-service.git"
+    job_name         = "backend-user-service-dev"
+    repo_url         = "https://github.com/team-jdd-uta/backend-user-service.git"
     branch           = "main"
     jenkinsfile_path = "jenkins/Jenkinsfile"
   },
   {
-    job_name         = "room-service-dev"
-    repo_url         = "https://github.com/team-jdd-uta/room-service.git"
+    job_name         = "backend-redis-stream-mongo-consumer-dev"
+    repo_url         = "https://github.com/team-jdd-uta/backend-redis-stream-mongo-consumer.git"
     branch           = "main"
     jenkinsfile_path = "jenkins/Jenkinsfile"
   },
   {
-    job_name         = "user-service-dev"
-    repo_url         = "https://github.com/team-jdd-uta/user-service.git"
+    job_name         = "backend-login-service-dev"
+    repo_url         = "https://github.com/team-jdd-uta/backend-login-service.git"
     branch           = "main"
     jenkinsfile_path = "jenkins/Jenkinsfile"
   },
   {
-    job_name         = "redis-stream-mongo-consumer-dev"
-    repo_url         = "https://github.com/team-jdd-uta/redis-stream-mongo-consumer.git"
+    job_name         = "backend-socket-io-gateway-dev"
+    repo_url         = "https://github.com/team-jdd-uta/backend-socket-io-gateway.git"
     branch           = "main"
     jenkinsfile_path = "jenkins/Jenkinsfile"
   },
   {
-    job_name         = "debezium-connect-dev"
-    repo_url         = "https://github.com/team-jdd-uta/debezium-connect.git"
+    job_name         = "backend-chat-service-dev"
+    repo_url         = "https://github.com/team-jdd-uta/backend-chat-service.git"
     branch           = "main"
     jenkinsfile_path = "jenkins/Jenkinsfile"
   },
   {
-    job_name         = "socket-io-gateway-dev"
-    repo_url         = "https://github.com/team-jdd-uta/socket-io-gateway.git"
+    job_name         = "backend-room-service-dev"
+    repo_url         = "https://github.com/team-jdd-uta/backend-room-service.git"
     branch           = "main"
     jenkinsfile_path = "jenkins/Jenkinsfile"
   },

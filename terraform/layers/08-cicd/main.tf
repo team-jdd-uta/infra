@@ -5,13 +5,13 @@ module "cicd" {
   environment                                = var.environment
   aws_region                                 = var.aws_region
   common_tags                                = var.common_tags
-  ecr_frontend_repository_name               = var.ecr_frontend_repository_name
   ecr_backend_repository_names               = var.ecr_backend_repository_names
   jenkins_git_credentials_id                 = var.jenkins_git_credentials_id
   jenkins_admin_secret_name                  = var.jenkins_admin_secret_name
   jenkins_admin_k8s_secret_name              = var.jenkins_admin_k8s_secret_name
   jenkins_git_credentials_secret_name        = var.jenkins_git_credentials_secret_name
   jenkins_git_k8s_secret_name                = var.jenkins_git_k8s_secret_name
+  jenkins_hostname                           = var.jenkins_hostname
   external_secrets_cluster_secret_store_name = var.external_secrets_cluster_secret_store_name
   frontend_pipeline_job_name                 = var.frontend_pipeline_job_name
   frontend_pipeline_repo_url                 = var.frontend_pipeline_repo_url

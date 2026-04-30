@@ -17,3 +17,7 @@ output "msk_bootstrap_brokers_sasl_iam" {
 output "documentdb_cluster_id" {
   value = aws_docdb_cluster.this.cluster_identifier
 }
+
+output "debezium_connector_arn" {
+  value = try(aws_mskconnect_connector.debezium_source[0].arn, null)
+}

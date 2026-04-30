@@ -18,21 +18,16 @@ variable "common_tags" {
   default = {}
 }
 
-variable "ecr_frontend_repository_name" {
-  type    = string
-  default = "team9-frontend"
-}
-
 variable "ecr_backend_repository_names" {
   type = list(string)
   default = [
-    "team9-backend-api-gateway",
-    "team9-backend-auth",
-    "team9-backend-user",
-    "team9-backend-chat",
-    "team9-backend-notification",
-    "team9-backend-media",
-    "team9-backend-admin",
+    "team9-kafka-outbox",
+    "team9-user-service",
+    "team9-redis-stream-mongo-consumer",
+    "team9-login-service",
+    "team9-socket-io-gateway",
+    "team9-chat-service",
+    "team9-room-service",
   ]
 }
 
@@ -71,9 +66,14 @@ variable "frontend_pipeline_job_name" {
   default = "frontend-dev"
 }
 
+variable "jenkins_hostname" {
+  type    = string
+  default = "jenkins.team9.cloud.skala-ai.com"
+}
+
 variable "frontend_pipeline_repo_url" {
   type    = string
-  default = "https://github.com/example-org/team9-frontend.git"
+  default = "https://github.com/team-jdd-uta/frontend-ui-vue.git"
 }
 
 variable "frontend_pipeline_repo_branch" {
@@ -95,46 +95,46 @@ variable "backend_pipeline_repositories" {
   }))
   default = [
     {
-      job_name         = "backend-api-gateway-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-api-gateway.git"
+      job_name         = "backend-kafka-outbox-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-kafka-outbox"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
     {
-      job_name         = "backend-auth-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-auth.git"
+      job_name         = "backend-user-service-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-user-service.git"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
     {
-      job_name         = "backend-user-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-user.git"
+      job_name         = "backend-redis-stream-mongo-consumer-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-redis-stream-mongo-consumer.git"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
     {
-      job_name         = "backend-chat-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-chat.git"
+      job_name         = "backend-login-service-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-login-service.git"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
     {
-      job_name         = "backend-notification-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-notification.git"
+      job_name         = "backend-socket-io-gateway-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-socket-io-gateway.git"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
     {
-      job_name         = "backend-media-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-media.git"
+      job_name         = "backend-chat-service-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-chat-service.git"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
     {
-      job_name         = "backend-admin-dev"
-      repo_url         = "https://github.com/example-org/team9-backend-admin.git"
+      job_name         = "backend-room-service-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-room-service.git"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
   ]
 }

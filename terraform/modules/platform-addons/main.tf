@@ -326,7 +326,7 @@ resource "helm_release" "external_secrets" {
 
 resource "kubernetes_manifest" "external_secrets_cluster_secret_store" {
   manifest = {
-    apiVersion = "external-secrets.io/v1beta1"
+    apiVersion = "external-secrets.io/v1"
     kind       = "ClusterSecretStore"
     metadata = {
       name = "aws-secretsmanager"
