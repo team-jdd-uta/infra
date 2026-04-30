@@ -37,3 +37,7 @@ variable "root_domain_name" {
 variable "cert_manager_email" {
   type = string
 }
+
+variable "argocd_hostname" {
+  type = string
+}

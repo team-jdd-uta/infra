@@ -13,3 +13,7 @@ output "external_secrets_role_arn" {
 output "cluster_secret_store_name" {
   value = kubernetes_manifest.external_secrets_cluster_secret_store.manifest.metadata.name
 }
+
+output "argocd_url" {
+  value = "https://${var.argocd_hostname}"
+}
