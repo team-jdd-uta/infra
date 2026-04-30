@@ -1,5 +1,5 @@
-bucket         = "team9-mini-terraform-state-prod"
+bucket         = "team9-mini-prod-terraform-state"
 key            = "02-foundation/terraform.tfstate"
 region         = "ap-northeast-2"
-dynamodb_table = "team9-mini-terraform-lock-prod"
+dynamodb_table = "team9-mini-prod-terraform-lock"
 encrypt        = true

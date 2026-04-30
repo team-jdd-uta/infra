@@ -141,7 +141,7 @@ variable "backend_pipeline_repositories" {
 
 variable "terraform_state_bucket" {
   type    = string
-  default = "team9-mini-terraform-state-dev"
+  default = "team9-mini-dev-terraform-state"
 }
 
 variable "terraform_state_region" {

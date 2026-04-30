@@ -66,7 +66,7 @@ terraform/
 
 - 실제 실행 파일:
   - `environments/<env>/global.tfvars`
-  - `environments/<env>/backend.hcl`
+  - `environments/<env>/backend-<layer>.hcl`
 - 저장소에 포함되는 예시 파일:
   - `environments/<env>/global.tfvars.example`
   - `environments/<env>/backend.hcl.example`
@@ -81,7 +81,7 @@ terraform apply -var-file=../../environments/dev/global.tfvars
 
 ```bash
 cd terraform/layers/02-foundation
-terraform init -backend-config=../../environments/dev/backend.hcl
+terraform init -backend-config=../../environments/dev/backend-02-foundation.hcl
 terraform apply -var-file=../../environments/dev/global.tfvars
 ```
 
@@ -181,7 +181,7 @@ aws secretsmanager create-secret \
 ```bash
 aws secretsmanager create-secret \
   --name team9-mini/dev/jenkins/git-credentials \
-  --secret-string '{"credentials_id":"gitops-scm-creds","username":"REPLACE_ME","token":"REPLACE_ME"}'
+  --secret-string '{"username":"REPLACE_ME","token":"REPLACE_ME"}'
 ```
 
 ### 2. `05-platform-addons` 적용
