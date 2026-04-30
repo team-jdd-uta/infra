@@ -4,7 +4,7 @@ locals {
       identifier                = "${var.project_name}-${var.environment}-user-service-rds"
       secret_name               = "${var.project_name}-${var.environment}-db-01-credentials"
       db_name                   = "app1"
-      debezium_connector_name   = "${var.project_name}-${var.environment}-debezium-source"
+      debezium_connector_name   = "${var.project_name}-${var.environment}-user-service-debezium-source"
       debezium_server_name      = "${var.project_name}-${var.environment}-mariadb"
       debezium_server_id_offset = 0
       debezium_topic_prefix     = var.debezium_topic_prefix
