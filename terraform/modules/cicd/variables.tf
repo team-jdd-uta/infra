@@ -22,23 +22,27 @@ variable "ecr_backend_repository_names" {
   type = list(string)
 }
 
-variable "jenkins_admin_username" {
-  type = string
-}
-
-variable "jenkins_admin_password" {
-  type = string
-}
-
 variable "jenkins_git_credentials_id" {
   type = string
 }
 
-variable "jenkins_git_username" {
+variable "jenkins_admin_secret_name" {
   type = string
 }
 
-variable "jenkins_git_token" {
+variable "jenkins_admin_k8s_secret_name" {
+  type = string
+}
+
+variable "jenkins_git_credentials_secret_name" {
+  type = string
+}
+
+variable "jenkins_git_k8s_secret_name" {
+  type = string
+}
+
+variable "external_secrets_cluster_secret_store_name" {
   type = string
 }
 

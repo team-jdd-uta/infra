@@ -36,29 +36,34 @@ variable "ecr_backend_repository_names" {
   ]
 }
 
-variable "jenkins_admin_username" {
-  type    = string
-  default = "admin"
-}
-
-variable "jenkins_admin_password" {
-  type    = string
-  default = "change-me-admin-password"
-}
-
 variable "jenkins_git_credentials_id" {
   type    = string
   default = "gitops-scm-creds"
 }
 
-variable "jenkins_git_username" {
+variable "jenkins_admin_secret_name" {
   type    = string
-  default = "example-username"
+  default = "team9-mini/dev/jenkins/admin"
 }
 
-variable "jenkins_git_token" {
+variable "jenkins_admin_k8s_secret_name" {
   type    = string
-  default = "example-token"
+  default = "jenkins-admin-credentials"
+}
+
+variable "jenkins_git_credentials_secret_name" {
+  type    = string
+  default = "team9-mini/dev/jenkins/git-credentials"
+}
+
+variable "jenkins_git_k8s_secret_name" {
+  type    = string
+  default = "jenkins-git-credentials"
+}
+
+variable "external_secrets_cluster_secret_store_name" {
+  type    = string
+  default = "aws-secretsmanager"
 }
 
 variable "frontend_pipeline_job_name" {

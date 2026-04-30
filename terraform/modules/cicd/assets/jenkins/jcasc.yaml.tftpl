@@ -1,12 +1,6 @@
 jenkins:
   systemMessage: "Managed by Terraform, Helm, and JCasC."
   numExecutors: 0
-  securityRealm:
-    local:
-      allowsSignup: false
-      users:
-        - id: "${jenkins_admin_username}"
-          password: "${jenkins_admin_password}"
   authorizationStrategy:
     loggedInUsersCanDoAnything:
       allowAnonymousRead: false
@@ -17,8 +11,8 @@ credentials:
           - usernamePassword:
               id: "${jenkins_git_credentials_id}"
               scope: GLOBAL
-              username: "${jenkins_git_username}"
-              password: "${jenkins_git_token}"
+              username: "${jenkins_git_username_secret_value}"
+              password: "${jenkins_git_token_secret_value}"
               description: "Git credential for pipeline repositories"
 unclassified:
   location:

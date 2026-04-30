@@ -22,11 +22,12 @@ ecr_backend_repository_names = [
   "team9-backend-media",
   "team9-backend-admin",
 ]
-jenkins_admin_username         = "admin"
-jenkins_admin_password         = "change-me-admin-password"
 jenkins_git_credentials_id     = "gitops-scm-creds"
-jenkins_git_username           = "example-username"
-jenkins_git_token              = "example-token"
+jenkins_admin_secret_name      = "team9-mini/prod/jenkins/admin"
+jenkins_admin_k8s_secret_name  = "jenkins-admin-credentials"
+jenkins_git_credentials_secret_name = "team9-mini/prod/jenkins/git-credentials"
+jenkins_git_k8s_secret_name    = "jenkins-git-credentials"
+external_secrets_cluster_secret_store_name = "aws-secretsmanager"
 frontend_pipeline_job_name     = "frontend-prod"
 frontend_pipeline_repo_url     = "https://github.com/example-org/team9-frontend.git"
 frontend_pipeline_repo_branch  = "main"

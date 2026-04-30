@@ -113,11 +113,12 @@ terraform apply -var-file=../../environments/dev/global.tfvars
 - `environments/<env>/global.tfvars`
   - `ecr_frontend_repository_name`
   - `ecr_backend_repository_names`
-  - `jenkins_admin_username`
-  - `jenkins_admin_password`
   - `jenkins_git_credentials_id`
-  - `jenkins_git_username`
-  - `jenkins_git_token`
+  - `jenkins_admin_secret_name`
+  - `jenkins_admin_k8s_secret_name`
+  - `jenkins_git_credentials_secret_name`
+  - `jenkins_git_k8s_secret_name`
+  - `external_secrets_cluster_secret_store_name`
   - `frontend_pipeline_job_name`
   - `frontend_pipeline_repo_url`
   - `frontend_pipeline_repo_branch`
@@ -137,7 +138,6 @@ terraform apply -var-file=../../environments/dev/global.tfvars
   - `username`
   - `password`
 - `team9-mini/<env>/jenkins/git-credentials`
-  - `credentials_id`
   - `username`
   - `token`
 
@@ -163,7 +163,8 @@ terraform apply -var-file=../../environments/dev/global.tfvars
 1. `global.tfvars.example`를 복사해 실제 `global.tfvars`를 만든다.
 2. 비민감 값만 `global.tfvars`에 남긴다.
 3. Jenkins 관리자 계정과 Git token은 Secrets Manager에 먼저 저장한다.
-4. Jenkins Helm/JCasC가 Secrets Manager 값을 읽도록 한 번 더 연결한다.
+4. `05-platform-addons`에서 ESO IRSA와 `ClusterSecretStore`를 먼저 생성한다.
+5. `08-cicd`가 Jenkins namespace의 `ExternalSecret`과 Helm/JCasC를 통해 Secrets Manager 값을 읽도록 적용한다.
 
 현재 저장소 기준에서 남은 연결 작업은 다음이다.
 
@@ -183,19 +184,29 @@ aws secretsmanager create-secret \
   --secret-string '{"credentials_id":"gitops-scm-creds","username":"REPLACE_ME","token":"REPLACE_ME"}'
 ```
 
-### 2. ESO 또는 별도 Kubernetes Secret 동기화 작성
+### 2. `05-platform-addons` 적용
 
-현재 인프라에는 External Secrets Operator가 설치되지만, Jenkins용 `ExternalSecret`은 아직 저장소에 없다. 따라서 다음 둘 중 하나가 필요하다.
+이 layer는 아래 항목을 만든다.
 
-- GitOps 저장소에 Jenkins namespace용 `SecretStore` / `ExternalSecret` 추가
-- 또는 Terraform/Helm values에서 Kubernetes Secret을 직접 생성
+- `external-dns`용 IRSA role
+- `external-secrets`용 IRSA role
+- `ClusterSecretStore/aws-secretsmanager`
 
-### 3. JCasC가 Kubernetes Secret을 읽도록 구조 변경
+출력값은 다음처럼 확인할 수 있다.
 
-현재 JCasC 템플릿은 Terraform 변수 값을 그대로 렌더링한다. 운영에서는 다음 방식으로 한 번 더 바꾸는 것이 좋다.
+```bash
+terraform -chdir=layers/05-platform-addons output external_dns_role_arn
+terraform -chdir=layers/05-platform-addons output external_secrets_role_arn
+terraform -chdir=layers/05-platform-addons output cluster_secret_store_name
+```
 
-- Jenkins chart에 existing secret 또는 additional secret mount를 추가
-- JCasC에서 secret 파일 또는 environment variable을 읽도록 변경
-- `jenkins_admin_password`, `jenkins_git_token` 같은 평문 tfvars 값은 제거
+### 3. `08-cicd` 적용
 
-즉 지금 상태는 "구조와 입력 인터페이스를 잡은 상태"이고, 운영 투입 전 마지막 단계는 "Secret Manager -> ExternalSecret -> Jenkins Secret -> JCasC 참조" 흐름을 연결하는 것이다.
+이 layer는 아래 흐름으로 Jenkins 비밀을 연결한다.
+
+- Secrets Manager secret name을 `global.tfvars`로 전달
+- Jenkins namespace에 `ExternalSecret` 2개 생성
+- Jenkins Helm chart는 `controller.admin.existingSecret`으로 관리자 계정을 읽음
+- Jenkins JCasC는 mounted secret key를 통해 Git credential을 읽음
+
+즉 현재 상태는 "Secret Manager -> ExternalSecret -> Jenkins Secret -> JCasC 참조" 흐름까지 저장소에 반영된 상태"다.

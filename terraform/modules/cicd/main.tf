@@ -13,11 +13,9 @@ locals {
   )
 
   jcasc_config = templatefile("${path.module}/assets/jenkins/jcasc.yaml.tftpl", {
-    jenkins_admin_username     = var.jenkins_admin_username
-    jenkins_admin_password     = var.jenkins_admin_password
-    jenkins_git_credentials_id = var.jenkins_git_credentials_id
-    jenkins_git_username       = var.jenkins_git_username
-    jenkins_git_token          = var.jenkins_git_token
+    jenkins_git_credentials_id        = var.jenkins_git_credentials_id
+    jenkins_git_username_secret_value = format("$${%s-git-username}", var.jenkins_git_k8s_secret_name)
+    jenkins_git_token_secret_value    = format("$${%s-git-token}", var.jenkins_git_k8s_secret_name)
   })
 
   seed_job_script = templatefile("${path.module}/assets/jenkins/jobs/seed.groovy.tftpl", {
@@ -69,6 +67,82 @@ resource "kubernetes_namespace" "jenkins" {
   }
 }
 
+resource "kubernetes_manifest" "jenkins_admin_external_secret" {
+  manifest = {
+    apiVersion = "external-secrets.io/v1beta1"
+    kind       = "ExternalSecret"
+    metadata = {
+      name      = "jenkins-admin"
+      namespace = kubernetes_namespace.jenkins.metadata[0].name
+    }
+    spec = {
+      refreshInterval = "1h"
+      secretStoreRef = {
+        kind = "ClusterSecretStore"
+        name = var.external_secrets_cluster_secret_store_name
+      }
+      target = {
+        name           = var.jenkins_admin_k8s_secret_name
+        creationPolicy = "Owner"
+      }
+      data = [
+        {
+          secretKey = "jenkins-admin-user"
+          remoteRef = {
+            key      = var.jenkins_admin_secret_name
+            property = "username"
+          }
+        },
+        {
+          secretKey = "jenkins-admin-password"
+          remoteRef = {
+            key      = var.jenkins_admin_secret_name
+            property = "password"
+          }
+        },
+      ]
+    }
+  }
+}
+
+resource "kubernetes_manifest" "jenkins_git_credentials_external_secret" {
+  manifest = {
+    apiVersion = "external-secrets.io/v1beta1"
+    kind       = "ExternalSecret"
+    metadata = {
+      name      = "jenkins-git-credentials"
+      namespace = kubernetes_namespace.jenkins.metadata[0].name
+    }
+    spec = {
+      refreshInterval = "1h"
+      secretStoreRef = {
+        kind = "ClusterSecretStore"
+        name = var.external_secrets_cluster_secret_store_name
+      }
+      target = {
+        name           = var.jenkins_git_k8s_secret_name
+        creationPolicy = "Owner"
+      }
+      data = [
+        {
+          secretKey = "git-username"
+          remoteRef = {
+            key      = var.jenkins_git_credentials_secret_name
+            property = "username"
+          }
+        },
+        {
+          secretKey = "git-token"
+          remoteRef = {
+            key      = var.jenkins_git_credentials_secret_name
+            property = "token"
+          }
+        },
+      ]
+    }
+  }
+}
+
 resource "helm_release" "jenkins" {
   name       = "jenkins"
   repository = "https://charts.jenkins.io"
@@ -79,8 +153,8 @@ resource "helm_release" "jenkins" {
     yamlencode({
       controller = {
         admin = {
-          username = var.jenkins_admin_username
-          password = var.jenkins_admin_password
+          createSecret   = false
+          existingSecret = var.jenkins_admin_k8s_secret_name
         }
         installPlugins = [
           "kubernetes",
@@ -97,6 +171,11 @@ resource "helm_release" "jenkins" {
             "02-seed-jobs"                = local.seed_job_script
           }
         }
+        additionalExistingSecrets = [
+          {
+            name = var.jenkins_git_k8s_secret_name
+          }
+        ]
       }
       agent = {
         enabled = true
@@ -107,5 +186,10 @@ resource "helm_release" "jenkins" {
         storageClass = "gp2"
       }
     })
+  ]
+
+  depends_on = [
+    kubernetes_manifest.jenkins_admin_external_secret,
+    kubernetes_manifest.jenkins_git_credentials_external_secret,
   ]
 }
