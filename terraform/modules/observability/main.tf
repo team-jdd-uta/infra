@@ -19,6 +19,33 @@ resource "helm_release" "kube_prometheus_stack" {
   repository = "https://prometheus-community.github.io/helm-charts"
   chart      = "kube-prometheus-stack"
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
+
+  values = [
+    yamlencode({
+      grafana = {
+        ingress = {
+          enabled          = true
+          ingressClassName = "alb"
+          hosts            = [var.grafana_hostname]
+          path             = "/"
+          annotations = {
+            "alb.ingress.kubernetes.io/scheme"          = "internet-facing"
+            "alb.ingress.kubernetes.io/target-type"     = "ip"
+            "alb.ingress.kubernetes.io/listen-ports"    = "[{\"HTTP\":80},{\"HTTPS\":443}]"
+            "alb.ingress.kubernetes.io/ssl-redirect"    = "443"
+            "alb.ingress.kubernetes.io/certificate-arn" = var.ingress_certificate_arn
+            "alb.ingress.kubernetes.io/success-codes"   = "200-399"
+            "external-dns.alpha.kubernetes.io/hostname" = var.grafana_hostname
+          }
+        }
+        "grafana.ini" = {
+          server = {
+            root_url = "https://${var.grafana_hostname}"
+          }
+        }
+      }
+    })
+  ]
 }
 
 resource "helm_release" "loki" {

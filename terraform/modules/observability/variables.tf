@@ -17,3 +17,11 @@ variable "common_tags" {
 variable "slack_webhook_secret_name" {
   type = string
 }
+
+variable "grafana_hostname" {
+  type = string
+}
+
+variable "ingress_certificate_arn" {
+  type = string
+}
