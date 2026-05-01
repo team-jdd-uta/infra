@@ -53,6 +53,19 @@ resource "helm_release" "kube_prometheus_stack" {
 
   values = [
     yamlencode({
+      defaultRules = {
+        rules = {
+          kubeControllerManager = false
+          kubeSchedulerAlerting = false
+          kubeSchedulerRecording = false
+        }
+      }
+      kubeControllerManager = {
+        enabled = false
+      }
+      kubeScheduler = {
+        enabled = false
+      }
       grafana = {
         ingress = {
           enabled          = true
@@ -129,8 +142,15 @@ resource "helm_release" "kube_prometheus_stack" {
                 {
                   channel       = var.slack_alert_channel
                   send_resolved = true
-                  title         = "[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}"
-                  text          = "{{ range .Alerts }}*Severity:* {{ .Labels.severity }}\\n*Namespace:* {{ .Labels.namespace }}\\n*Summary:* {{ .Annotations.summary }}\\n*Description:* {{ .Annotations.description }}\\n{{ end }}"
+                  title         = "[{{ if eq .Status \"firing\" }}발생{{ else }}해결{{ end }}] {{ .CommonLabels.alertname }}"
+                  text          = <<-EOT
+                    {{ range .Alerts }}
+                    *심각도:* {{ .Labels.severity }}
+                    *네임스페이스:* {{ if .Labels.namespace }}{{ .Labels.namespace }}{{ else }}-{{ end }}
+                    *요약:* {{ .Annotations.summary }}
+                    *설명:* {{ .Annotations.description }}
+                    {{ end }}
+                  EOT
                 },
               ]
             },
@@ -140,8 +160,15 @@ resource "helm_release" "kube_prometheus_stack" {
                 {
                   channel       = var.slack_alert_channel
                   send_resolved = true
-                  title         = "<!channel> [{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}"
-                  text          = "{{ range .Alerts }}*Severity:* {{ .Labels.severity }}\\n*Namespace:* {{ .Labels.namespace }}\\n*Summary:* {{ .Annotations.summary }}\\n*Description:* {{ .Annotations.description }}\\n{{ end }}"
+                  title         = "<!channel> [{{ if eq .Status \"firing\" }}발생{{ else }}해결{{ end }}] {{ .CommonLabels.alertname }}"
+                  text          = <<-EOT
+                    {{ range .Alerts }}
+                    *심각도:* {{ .Labels.severity }}
+                    *네임스페이스:* {{ if .Labels.namespace }}{{ .Labels.namespace }}{{ else }}-{{ end }}
+                    *요약:* {{ .Annotations.summary }}
+                    *설명:* {{ .Annotations.description }}
+                    {{ end }}
+                  EOT
                 },
               ]
             },
