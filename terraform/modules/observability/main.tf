@@ -67,6 +67,16 @@ resource "helm_release" "kube_prometheus_stack" {
         enabled = false
       }
       grafana = {
+        resources = {
+          requests = {
+            cpu    = "100m"
+            memory = "128Mi"
+          }
+          limits = {
+            cpu    = "500m"
+            memory = "512Mi"
+          }
+        }
         ingress = {
           enabled          = true
           ingressClassName = "alb"
@@ -141,12 +151,17 @@ resource "helm_release" "kube_prometheus_stack" {
               slack_configs = [
                 {
                   channel       = var.slack_alert_channel
+                  color         = "{{ if eq .Status \"resolved\" }}#2f80ed{{ else if eq .CommonLabels.severity \"critical\" }}danger{{ else }}warning{{ end }}"
                   send_resolved = true
-                  title         = "[{{ if eq .Status \"firing\" }}발생{{ else }}해결{{ end }}] {{ .CommonLabels.alertname }}"
+                  title         = "{{ if eq .Status \"resolved\" }}🔵 [해결]{{ else if eq .CommonLabels.severity \"critical\" }}🔴 [발생]{{ else }}🟡 [발생]{{ end }} {{ if .CommonLabels.service }}{{ .CommonLabels.service }}{{ else }}Kubernetes{{ end }} - {{ .CommonLabels.alertname }}"
                   text          = <<-EOT
                     {{ range .Alerts }}
+                    *서비스:* {{ if .Labels.service }}{{ .Labels.service }}{{ else }}Kubernetes{{ end }}
                     *심각도:* {{ .Labels.severity }}
+                    *환경:* ${var.environment}
                     *네임스페이스:* {{ if .Labels.namespace }}{{ .Labels.namespace }}{{ else }}-{{ end }}
+                    *대상:* {{ if .Labels.pod }}{{ .Labels.pod }}{{ else if .Labels.instance }}{{ .Labels.instance }}{{ else }}-{{ end }}
+                    *상태:* {{ if eq .Status "firing" }}발생{{ else }}해결{{ end }}
                     *요약:* {{ .Annotations.summary }}
                     *설명:* {{ .Annotations.description }}
                     {{ end }}
@@ -159,12 +174,17 @@ resource "helm_release" "kube_prometheus_stack" {
               slack_configs = [
                 {
                   channel       = var.slack_alert_channel
+                  color         = "{{ if eq .Status \"resolved\" }}#2f80ed{{ else }}danger{{ end }}"
                   send_resolved = true
-                  title         = "<!channel> [{{ if eq .Status \"firing\" }}발생{{ else }}해결{{ end }}] {{ .CommonLabels.alertname }}"
+                  title         = "<!channel> {{ if eq .Status \"resolved\" }}🔵 [해결]{{ else }}🔴 [발생]{{ end }} {{ if .CommonLabels.service }}{{ .CommonLabels.service }}{{ else }}Kubernetes{{ end }} - {{ .CommonLabels.alertname }}"
                   text          = <<-EOT
                     {{ range .Alerts }}
+                    *서비스:* {{ if .Labels.service }}{{ .Labels.service }}{{ else }}Kubernetes{{ end }}
                     *심각도:* {{ .Labels.severity }}
+                    *환경:* ${var.environment}
                     *네임스페이스:* {{ if .Labels.namespace }}{{ .Labels.namespace }}{{ else }}-{{ end }}
+                    *대상:* {{ if .Labels.pod }}{{ .Labels.pod }}{{ else if .Labels.instance }}{{ .Labels.instance }}{{ else }}-{{ end }}
+                    *상태:* {{ if eq .Status "firing" }}발생{{ else }}해결{{ end }}
                     *요약:* {{ .Annotations.summary }}
                     *설명:* {{ .Annotations.description }}
                     {{ end }}
@@ -177,6 +197,43 @@ resource "helm_release" "kube_prometheus_stack" {
         }
         alertmanagerSpec = {
           secrets = [var.slack_webhook_k8s_secret_name]
+        }
+      }
+      additionalPrometheusRulesMap = {
+        team9-grafana-alerts = {
+          groups = [
+            {
+              name = "team9.grafana.rules"
+              rules = [
+                {
+                  alert = "GrafanaP95LatencyHigh"
+                  expr  = "histogram_quantile(0.95, sum by (le) (rate(grafana_http_request_duration_seconds_bucket{namespace=\"monitoring\"}[5m]))) > 1"
+                  for   = "5m"
+                  labels = {
+                    severity = "warning"
+                    service  = "Grafana"
+                  }
+                  annotations = {
+                    summary     = "Grafana p95 latency가 1초를 초과했습니다."
+                    description = "최근 5분 기준 Grafana HTTP 요청 p95 latency가 1초를 초과했습니다. Grafana 대시보드 또는 데이터소스 응답 지연을 확인하세요."
+                  }
+                },
+                {
+                  alert = "GrafanaCpuLimitUsageHigh"
+                  expr  = "sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{namespace=\"monitoring\",pod=~\"kube-prometheus-stack-grafana-.*\",container!=\"\",image!=\"\"}[5m])) / sum by (namespace, pod) (kube_pod_container_resource_limits{namespace=\"monitoring\",pod=~\"kube-prometheus-stack-grafana-.*\",resource=\"cpu\",unit=\"core\"}) > 0.5"
+                  for   = "10m"
+                  labels = {
+                    severity = "warning"
+                    service  = "Grafana"
+                  }
+                  annotations = {
+                    summary     = "Grafana CPU 사용률이 limit 대비 50%를 초과했습니다."
+                    description = "최근 10분 동안 Grafana pod CPU 사용률이 설정된 CPU limit의 50%를 초과했습니다. 대시보드 쿼리 부하와 데이터소스 상태를 확인하세요."
+                  }
+                },
+              ]
+            },
+          ]
         }
       }
     })

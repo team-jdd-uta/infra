@@ -12,4 +12,7 @@ module "platform_addons" {
   root_domain_name   = var.root_domain_name
   cert_manager_email = var.cert_manager_email
   argocd_hostname    = var.argocd_hostname
+
+  slack_webhook_secret_name                  = var.slack_webhook_secret_name
+  external_secrets_cluster_secret_store_name = var.external_secrets_cluster_secret_store_name
 }
