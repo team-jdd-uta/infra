@@ -43,6 +43,11 @@ variable "foundation_state_key" {
   default = "02-foundation/terraform.tfstate"
 }
 
+variable "edge_state_key" {
+  type    = string
+  default = "03-edge/terraform.tfstate"
+}
+
 variable "root_domain_name" {
   type    = string
   default = "example.com"

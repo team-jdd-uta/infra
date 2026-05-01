@@ -42,6 +42,10 @@ variable "argocd_hostname" {
   type = string
 }
 
+variable "ingress_certificate_arn" {
+  type = string
+}
+
 variable "slack_webhook_secret_name" {
   type = string
 }
