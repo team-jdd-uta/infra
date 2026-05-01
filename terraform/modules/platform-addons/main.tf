@@ -489,7 +489,19 @@ resource "helm_release" "argocd" {
                 method: POST
                 body: |
                   {
-                    "text": "🔴 [배포 실패] Argo CD - {{.app.metadata.name}}\\n*서비스:* Argo CD\\n*심각도:* critical\\n*환경:* ${var.environment}\\n*대상:* {{.app.metadata.name}}\\n*상태:* sync failed\\n*요약:* Git 변경사항을 클러스터에 동기화하지 못했습니다.\\n*링크:* {{.context.argocdUrl}}/applications/{{.app.metadata.name}}?operation=true"
+                    "attachments": [{
+                      "color": "danger",
+                      "title": "[배포 실패] Argo CD - {{.app.metadata.name}}",
+                      "title_link": "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}?operation=true",
+                      "fields": [
+                        {"title": "서비스", "value": "Argo CD", "short": true},
+                        {"title": "심각도", "value": "critical", "short": true},
+                        {"title": "환경", "value": "${var.environment}", "short": true},
+                        {"title": "대상", "value": "{{.app.metadata.name}}", "short": true},
+                        {"title": "상태", "value": "sync failed", "short": true},
+                        {"title": "요약", "value": "Git 변경사항을 클러스터에 동기화하지 못했습니다.", "short": false}
+                      ]
+                    }]
                   }
           EOT
           "template.team9-health-degraded" = <<-EOT
@@ -498,7 +510,19 @@ resource "helm_release" "argocd" {
                 method: POST
                 body: |
                   {
-                    "text": "🟡 [상태 비정상] Argo CD - {{.app.metadata.name}}\\n*서비스:* Argo CD\\n*심각도:* warning\\n*환경:* ${var.environment}\\n*대상:* {{.app.metadata.name}}\\n*상태:* health degraded\\n*요약:* 배포된 애플리케이션의 Health 상태가 Degraded입니다.\\n*링크:* {{.context.argocdUrl}}/applications/{{.app.metadata.name}}"
+                    "attachments": [{
+                      "color": "warning",
+                      "title": "[상태 비정상] Argo CD - {{.app.metadata.name}}",
+                      "title_link": "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}",
+                      "fields": [
+                        {"title": "서비스", "value": "Argo CD", "short": true},
+                        {"title": "심각도", "value": "warning", "short": true},
+                        {"title": "환경", "value": "${var.environment}", "short": true},
+                        {"title": "대상", "value": "{{.app.metadata.name}}", "short": true},
+                        {"title": "상태", "value": "health degraded", "short": true},
+                        {"title": "요약", "value": "배포된 애플리케이션의 Health 상태가 Degraded입니다.", "short": false}
+                      ]
+                    }]
                   }
           EOT
           "template.team9-sync-succeeded" = <<-EOT
@@ -507,7 +531,19 @@ resource "helm_release" "argocd" {
                 method: POST
                 body: |
                   {
-                    "text": "🔵 [배포 성공] Argo CD - {{.app.metadata.name}}\\n*서비스:* Argo CD\\n*심각도:* info\\n*환경:* ${var.environment}\\n*대상:* {{.app.metadata.name}}\\n*상태:* sync succeeded\\n*요약:* Git 변경사항이 클러스터에 정상 반영되었습니다.\\n*링크:* {{.context.argocdUrl}}/applications/{{.app.metadata.name}}"
+                    "attachments": [{
+                      "color": "#2f80ed",
+                      "title": "[배포 성공] Argo CD - {{.app.metadata.name}}",
+                      "title_link": "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}",
+                      "fields": [
+                        {"title": "서비스", "value": "Argo CD", "short": true},
+                        {"title": "심각도", "value": "info", "short": true},
+                        {"title": "환경", "value": "${var.environment}", "short": true},
+                        {"title": "대상", "value": "{{.app.metadata.name}}", "short": true},
+                        {"title": "상태", "value": "sync succeeded", "short": true},
+                        {"title": "요약", "value": "Git 변경사항이 클러스터에 정상 반영되었습니다.", "short": false}
+                      ]
+                    }]
                   }
           EOT
         }
