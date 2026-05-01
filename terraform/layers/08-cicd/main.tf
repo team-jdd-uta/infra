@@ -19,6 +19,7 @@ module "cicd" {
   jenkins_slack_webhook_credentials_id       = var.jenkins_slack_webhook_credentials_id
   jenkins_hostname                           = var.jenkins_hostname
   jenkins_public_url                         = var.jenkins_public_url
+  ingress_certificate_arn                    = data.terraform_remote_state.edge.outputs.alb_ingress_certificate_arn
   external_secrets_cluster_secret_store_name = var.external_secrets_cluster_secret_store_name
   frontend_pipeline_job_name                 = var.frontend_pipeline_job_name
   frontend_pipeline_repo_url                 = var.frontend_pipeline_repo_url

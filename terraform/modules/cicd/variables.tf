@@ -78,6 +78,10 @@ variable "jenkins_public_url" {
   type = string
 }
 
+variable "ingress_certificate_arn" {
+  type = string
+}
+
 variable "frontend_pipeline_repo_url" {
   type = string
 }
