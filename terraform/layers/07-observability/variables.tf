@@ -37,3 +37,13 @@ variable "platform_state_key" {
   type    = string
   default = "04-platform-eks/terraform.tfstate"
 }
+
+variable "edge_state_key" {
+  type    = string
+  default = "03-edge/terraform.tfstate"
+}
+
+variable "grafana_hostname" {
+  type    = string
+  default = "grafana.team9.cloud.skala-ai.com"
+}
