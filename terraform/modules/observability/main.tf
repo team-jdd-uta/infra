@@ -14,6 +14,37 @@ resource "kubernetes_namespace" "monitoring" {
   }
 }
 
+resource "kubernetes_manifest" "alertmanager_slack_webhook_external_secret" {
+  manifest = {
+    apiVersion = "external-secrets.io/v1"
+    kind       = "ExternalSecret"
+    metadata = {
+      name      = "alertmanager-slack-webhook"
+      namespace = kubernetes_namespace.monitoring.metadata[0].name
+    }
+    spec = {
+      refreshInterval = "1h"
+      secretStoreRef = {
+        kind = "ClusterSecretStore"
+        name = var.external_secrets_cluster_secret_store_name
+      }
+      target = {
+        name           = var.slack_webhook_k8s_secret_name
+        creationPolicy = "Owner"
+      }
+      data = [
+        {
+          secretKey = "webhook_url"
+          remoteRef = {
+            key      = var.slack_webhook_secret_name
+            property = "url"
+          }
+        },
+      ]
+    }
+  }
+}
+
 resource "helm_release" "kube_prometheus_stack" {
   name       = "kube-prometheus-stack"
   repository = "https://prometheus-community.github.io/helm-charts"
@@ -44,8 +75,87 @@ resource "helm_release" "kube_prometheus_stack" {
           }
         }
       }
+      alertmanager = {
+        config = {
+          global = {
+            resolve_timeout    = "5m"
+            slack_api_url_file = "/etc/alertmanager/secrets/${var.slack_webhook_k8s_secret_name}/webhook_url"
+          }
+          inhibit_rules = [
+            {
+              source_matchers = ["severity = critical"]
+              target_matchers = ["severity =~ warning|info"]
+              equal           = ["namespace", "alertname"]
+            },
+            {
+              source_matchers = ["severity = warning"]
+              target_matchers = ["severity = info"]
+              equal           = ["namespace", "alertname"]
+            },
+            {
+              source_matchers = ["alertname = InfoInhibitor"]
+              target_matchers = ["severity = info"]
+              equal           = ["namespace"]
+            },
+            {
+              target_matchers = ["alertname = InfoInhibitor"]
+            },
+          ]
+          route = {
+            group_by        = ["namespace", "alertname"]
+            group_wait      = "30s"
+            group_interval  = "5m"
+            repeat_interval = "6h"
+            receiver        = "slack-alerts"
+            routes = [
+              {
+                receiver = "null"
+                matchers = ["alertname = Watchdog"]
+              },
+              {
+                receiver        = "slack-critical"
+                matchers        = ["severity = critical"]
+                repeat_interval = "1h"
+              },
+            ]
+          }
+          receivers = [
+            {
+              name = "null"
+            },
+            {
+              name = "slack-alerts"
+              slack_configs = [
+                {
+                  channel       = var.slack_alert_channel
+                  send_resolved = true
+                  title         = "[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}"
+                  text          = "{{ range .Alerts }}*Severity:* {{ .Labels.severity }}\\n*Namespace:* {{ .Labels.namespace }}\\n*Summary:* {{ .Annotations.summary }}\\n*Description:* {{ .Annotations.description }}\\n{{ end }}"
+                },
+              ]
+            },
+            {
+              name = "slack-critical"
+              slack_configs = [
+                {
+                  channel       = var.slack_alert_channel
+                  send_resolved = true
+                  title         = "<!channel> [{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}"
+                  text          = "{{ range .Alerts }}*Severity:* {{ .Labels.severity }}\\n*Namespace:* {{ .Labels.namespace }}\\n*Summary:* {{ .Annotations.summary }}\\n*Description:* {{ .Annotations.description }}\\n{{ end }}"
+                },
+              ]
+            },
+          ]
+          templates = ["/etc/alertmanager/config/*.tmpl"]
+        }
+        alertmanagerSpec = {
+          secrets = [var.slack_webhook_k8s_secret_name]
+        }
+      }
     })
   ]
+
+  depends_on = [kubernetes_manifest.alertmanager_slack_webhook_external_secret]
 }
 
 resource "helm_release" "loki" {

@@ -1,6 +1,9 @@
 jobs:
   - script: |
       pipelineJob('${frontend_pipeline_job_name}') {
+        triggers {
+          githubPush()
+        }
         definition {
           cpsScm {
             scm {
@@ -19,6 +22,9 @@ jobs:
 
       %{ for repo in backend_pipeline_repositories ~}
       pipelineJob('${repo.job_name}') {
+        triggers {
+          githubPush()
+        }
         definition {
           cpsScm {
             scm {
