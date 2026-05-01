@@ -153,7 +153,7 @@ resource "helm_release" "kube_prometheus_stack" {
                   channel       = var.slack_alert_channel
                   color         = "{{ if eq .Status \"resolved\" }}#2f80ed{{ else if eq .CommonLabels.severity \"critical\" }}danger{{ else }}warning{{ end }}"
                   send_resolved = true
-                  title         = "{{ if eq .Status \"resolved\" }}🔵 [해결]{{ else if eq .CommonLabels.severity \"critical\" }}🔴 [발생]{{ else }}🟡 [발생]{{ end }} {{ if .CommonLabels.service }}{{ .CommonLabels.service }}{{ else }}Kubernetes{{ end }} - {{ .CommonLabels.alertname }}"
+                  title         = "{{ if eq .Status \"resolved\" }}[해결]{{ else }}[발생]{{ end }} {{ if .CommonLabels.service }}{{ .CommonLabels.service }}{{ else }}Kubernetes{{ end }} - {{ .CommonLabels.alertname }}"
                   text          = <<-EOT
                     {{ range .Alerts }}
                     *서비스:* {{ if .Labels.service }}{{ .Labels.service }}{{ else }}Kubernetes{{ end }}
@@ -176,7 +176,7 @@ resource "helm_release" "kube_prometheus_stack" {
                   channel       = var.slack_alert_channel
                   color         = "{{ if eq .Status \"resolved\" }}#2f80ed{{ else }}danger{{ end }}"
                   send_resolved = true
-                  title         = "<!channel> {{ if eq .Status \"resolved\" }}🔵 [해결]{{ else }}🔴 [발생]{{ end }} {{ if .CommonLabels.service }}{{ .CommonLabels.service }}{{ else }}Kubernetes{{ end }} - {{ .CommonLabels.alertname }}"
+                  title         = "<!channel> {{ if eq .Status \"resolved\" }}[해결]{{ else }}[발생]{{ end }} {{ if .CommonLabels.service }}{{ .CommonLabels.service }}{{ else }}Kubernetes{{ end }} - {{ .CommonLabels.alertname }}"
                   text          = <<-EOT
                     {{ range .Alerts }}
                     *서비스:* {{ if .Labels.service }}{{ .Labels.service }}{{ else }}Kubernetes{{ end }}
