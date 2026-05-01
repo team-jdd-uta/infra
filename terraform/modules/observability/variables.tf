@@ -18,6 +18,18 @@ variable "slack_webhook_secret_name" {
   type = string
 }
 
+variable "slack_alert_channel" {
+  type = string
+}
+
+variable "slack_webhook_k8s_secret_name" {
+  type = string
+}
+
+variable "external_secrets_cluster_secret_store_name" {
+  type = string
+}
+
 variable "grafana_hostname" {
   type = string
 }

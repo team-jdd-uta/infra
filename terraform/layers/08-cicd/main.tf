@@ -14,7 +14,11 @@ module "cicd" {
   jenkins_admin_k8s_secret_name              = var.jenkins_admin_k8s_secret_name
   jenkins_git_credentials_secret_name        = var.jenkins_git_credentials_secret_name
   jenkins_git_k8s_secret_name                = var.jenkins_git_k8s_secret_name
+  slack_webhook_secret_name                  = var.slack_webhook_secret_name
+  jenkins_slack_webhook_k8s_secret_name      = var.jenkins_slack_webhook_k8s_secret_name
+  jenkins_slack_webhook_credentials_id       = var.jenkins_slack_webhook_credentials_id
   jenkins_hostname                           = var.jenkins_hostname
+  jenkins_public_url                         = var.jenkins_public_url
   external_secrets_cluster_secret_store_name = var.external_secrets_cluster_secret_store_name
   frontend_pipeline_job_name                 = var.frontend_pipeline_job_name
   frontend_pipeline_repo_url                 = var.frontend_pipeline_repo_url

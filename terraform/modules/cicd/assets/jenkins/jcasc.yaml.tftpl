@@ -51,6 +51,11 @@ credentials:
               username: "${jenkins_git_username_secret_value}"
               password: "${jenkins_git_token_secret_value}"
               description: "Git credential for pipeline repositories"
+          - string:
+              id: "${jenkins_slack_webhook_credentials_id}"
+              scope: GLOBAL
+              secret: "${jenkins_slack_webhook_secret_value}"
+              description: "Slack incoming webhook for Jenkins pipeline notifications"
 unclassified:
   location:
-    url: "${jenkins_url}/"
+    url: "${jenkins_public_url}/"

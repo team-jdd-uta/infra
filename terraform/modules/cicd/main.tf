@@ -12,15 +12,18 @@ locals {
   ecr_repository_names = distinct(concat(var.ecr_backend_repository_names, var.ecr_legacy_repository_names))
 
   jcasc_config = templatefile("${path.module}/assets/jenkins/jcasc.yaml.tftpl", {
-    jenkins_git_credentials_id          = var.jenkins_git_credentials_id
-    jenkins_git_username_secret_value   = format("$${%s-git-username}", var.jenkins_git_k8s_secret_name)
-    jenkins_git_token_secret_value      = format("$${%s-git-token}", var.jenkins_git_k8s_secret_name)
-    jenkins_admin_username_secret_value = format("$${%s-chart-admin-username}", var.jenkins_admin_k8s_secret_name)
-    jenkins_admin_password_secret_value = format("$${%s-chart-admin-password}", var.jenkins_admin_k8s_secret_name)
-    jenkins_namespace                   = "jenkins"
-    jenkins_url                         = "http://jenkins.jenkins.svc.cluster.local:8080"
-    jenkins_tunnel                      = "jenkins-agent.jenkins.svc.cluster.local:50000"
-    jenkins_agent_service_account       = var.jenkins_kaniko_service_account_name
+    jenkins_git_credentials_id           = var.jenkins_git_credentials_id
+    jenkins_git_username_secret_value    = format("$${%s-git-username}", var.jenkins_git_k8s_secret_name)
+    jenkins_git_token_secret_value       = format("$${%s-git-token}", var.jenkins_git_k8s_secret_name)
+    jenkins_slack_webhook_credentials_id = var.jenkins_slack_webhook_credentials_id
+    jenkins_slack_webhook_secret_value   = format("$${%s-webhook-url}", var.jenkins_slack_webhook_k8s_secret_name)
+    jenkins_admin_username_secret_value  = format("$${%s-chart-admin-username}", var.jenkins_admin_k8s_secret_name)
+    jenkins_admin_password_secret_value  = format("$${%s-chart-admin-password}", var.jenkins_admin_k8s_secret_name)
+    jenkins_namespace                    = "jenkins"
+    jenkins_url                          = "http://jenkins.jenkins.svc.cluster.local:8080"
+    jenkins_public_url                   = var.jenkins_public_url
+    jenkins_tunnel                       = "jenkins-agent.jenkins.svc.cluster.local:50000"
+    jenkins_agent_service_account        = var.jenkins_kaniko_service_account_name
   })
 
   seed_job_script = templatefile("${path.module}/assets/jenkins/jobs/seed.groovy.tftpl", {
@@ -269,6 +272,37 @@ resource "kubernetes_manifest" "jenkins_git_credentials_external_secret" {
   }
 }
 
+resource "kubernetes_manifest" "jenkins_slack_webhook_external_secret" {
+  manifest = {
+    apiVersion = "external-secrets.io/v1"
+    kind       = "ExternalSecret"
+    metadata = {
+      name      = "jenkins-slack-webhook"
+      namespace = kubernetes_namespace.jenkins.metadata[0].name
+    }
+    spec = {
+      refreshInterval = "1h"
+      secretStoreRef = {
+        kind = "ClusterSecretStore"
+        name = var.external_secrets_cluster_secret_store_name
+      }
+      target = {
+        name           = var.jenkins_slack_webhook_k8s_secret_name
+        creationPolicy = "Owner"
+      }
+      data = [
+        {
+          secretKey = "webhook-url"
+          remoteRef = {
+            key      = var.slack_webhook_secret_name
+            property = "url"
+          }
+        },
+      ]
+    }
+  }
+}
+
 resource "helm_release" "jenkins" {
   name       = "jenkins"
   repository = "https://charts.jenkins.io"
@@ -286,9 +320,11 @@ resource "helm_release" "jenkins" {
           "kubernetes",
           "workflow-aggregator",
           "git",
+          "github",
           "configuration-as-code",
           "job-dsl",
           "credentials",
+          "credentials-binding",
           "plain-credentials",
           "timestamper",
         ]
@@ -318,6 +354,10 @@ resource "helm_release" "jenkins" {
           {
             name    = var.jenkins_git_k8s_secret_name
             keyName = "git-token"
+          },
+          {
+            name    = var.jenkins_slack_webhook_k8s_secret_name
+            keyName = "webhook-url"
           }
         ]
         ingress = {
@@ -348,5 +388,6 @@ resource "helm_release" "jenkins" {
   depends_on = [
     kubernetes_manifest.jenkins_admin_external_secret,
     kubernetes_manifest.jenkins_git_credentials_external_secret,
+    kubernetes_manifest.jenkins_slack_webhook_external_secret,
   ]
 }

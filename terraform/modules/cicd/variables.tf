@@ -50,6 +50,18 @@ variable "jenkins_git_k8s_secret_name" {
   type = string
 }
 
+variable "slack_webhook_secret_name" {
+  type = string
+}
+
+variable "jenkins_slack_webhook_k8s_secret_name" {
+  type = string
+}
+
+variable "jenkins_slack_webhook_credentials_id" {
+  type = string
+}
+
 variable "external_secrets_cluster_secret_store_name" {
   type = string
 }
@@ -59,6 +71,10 @@ variable "frontend_pipeline_job_name" {
 }
 
 variable "jenkins_hostname" {
+  type = string
+}
+
+variable "jenkins_public_url" {
   type = string
 }
 

@@ -23,6 +23,21 @@ variable "slack_webhook_secret_name" {
   default = "team9-mini/slack/webhook"
 }
 
+variable "slack_alert_channel" {
+  type    = string
+  default = "#team9-alerts"
+}
+
+variable "slack_webhook_k8s_secret_name" {
+  type    = string
+  default = "alertmanager-slack-webhook"
+}
+
+variable "external_secrets_cluster_secret_store_name" {
+  type    = string
+  default = "aws-secretsmanager"
+}
+
 variable "terraform_state_bucket" {
   type    = string
   default = "team9-mini-dev-terraform-state"

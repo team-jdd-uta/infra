@@ -63,6 +63,21 @@ variable "jenkins_git_k8s_secret_name" {
   default = "jenkins-git-credentials"
 }
 
+variable "slack_webhook_secret_name" {
+  type    = string
+  default = "team9-mini/slack/webhook"
+}
+
+variable "jenkins_slack_webhook_k8s_secret_name" {
+  type    = string
+  default = "jenkins-slack-webhook"
+}
+
+variable "jenkins_slack_webhook_credentials_id" {
+  type    = string
+  default = "jenkins-slack-webhook"
+}
+
 variable "external_secrets_cluster_secret_store_name" {
   type    = string
   default = "aws-secretsmanager"
@@ -76,6 +91,11 @@ variable "frontend_pipeline_job_name" {
 variable "jenkins_hostname" {
   type    = string
   default = "jenkins.team9.cloud.skala-ai.com"
+}
+
+variable "jenkins_public_url" {
+  type    = string
+  default = "http://jenkins.team9.cloud.skala-ai.com"
 }
 
 variable "frontend_pipeline_repo_url" {
