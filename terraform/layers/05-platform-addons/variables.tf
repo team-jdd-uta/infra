@@ -57,3 +57,13 @@ variable "argocd_hostname" {
   type    = string
   default = "argocd.team9.cloud.skala-ai.com"
 }
+
+variable "slack_webhook_secret_name" {
+  type    = string
+  default = "team9-mini/slack/webhook"
+}
+
+variable "external_secrets_cluster_secret_store_name" {
+  type    = string
+  default = "aws-secretsmanager"
+}

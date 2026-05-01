@@ -41,3 +41,11 @@ variable "cert_manager_email" {
 variable "argocd_hostname" {
   type = string
 }
+
+variable "slack_webhook_secret_name" {
+  type = string
+}
+
+variable "external_secrets_cluster_secret_store_name" {
+  type = string
+}

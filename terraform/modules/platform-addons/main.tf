@@ -404,6 +404,39 @@ resource "kubernetes_manifest" "cert_manager_cluster_issuer" {
   depends_on = [helm_release.cert_manager]
 }
 
+resource "kubernetes_manifest" "argocd_notifications_slack_webhook_external_secret" {
+  manifest = {
+    apiVersion = "external-secrets.io/v1"
+    kind       = "ExternalSecret"
+    metadata = {
+      name      = "argocd-notifications-slack-webhook"
+      namespace = kubernetes_namespace.argocd.metadata[0].name
+    }
+    spec = {
+      refreshInterval = "1h"
+      secretStoreRef = {
+        kind = "ClusterSecretStore"
+        name = var.external_secrets_cluster_secret_store_name
+      }
+      target = {
+        name           = "argocd-notifications-secret"
+        creationPolicy = "Merge"
+      }
+      data = [
+        {
+          secretKey = "webhook-url"
+          remoteRef = {
+            key      = var.slack_webhook_secret_name
+            property = "url"
+          }
+        },
+      ]
+    }
+  }
+
+  depends_on = [kubernetes_manifest.external_secrets_cluster_secret_store]
+}
+
 resource "helm_release" "argocd" {
   name       = "argocd"
   repository = "https://argoproj.github.io/argo-helm"
@@ -426,6 +459,80 @@ resource "helm_release" "argocd" {
             "alb.ingress.kubernetes.io/target-type"     = "ip"
             "external-dns.alpha.kubernetes.io/hostname" = var.argocd_hostname
           }
+        }
+      }
+      notifications = {
+        enabled   = true
+        argocdUrl = "https://${var.argocd_hostname}"
+        notifiers = {
+          "service.webhook.slack_webhook" = <<-EOT
+            url: $webhook-url
+            headers:
+            - name: Content-Type
+              value: application/json
+          EOT
+        }
+        subscriptions = [
+          {
+            recipients = ["slack_webhook"]
+            triggers = [
+              "on-sync-failed",
+              "on-health-degraded",
+              "on-sync-succeeded",
+            ]
+          },
+        ]
+        templates = {
+          "template.team9-sync-failed" = <<-EOT
+            webhook:
+              slack_webhook:
+                method: POST
+                body: |
+                  {
+                    "text": "🔴 [배포 실패] Argo CD - {{.app.metadata.name}}\\n*서비스:* Argo CD\\n*심각도:* critical\\n*환경:* ${var.environment}\\n*대상:* {{.app.metadata.name}}\\n*상태:* sync failed\\n*요약:* Git 변경사항을 클러스터에 동기화하지 못했습니다.\\n*링크:* {{.context.argocdUrl}}/applications/{{.app.metadata.name}}?operation=true"
+                  }
+          EOT
+          "template.team9-health-degraded" = <<-EOT
+            webhook:
+              slack_webhook:
+                method: POST
+                body: |
+                  {
+                    "text": "🟡 [상태 비정상] Argo CD - {{.app.metadata.name}}\\n*서비스:* Argo CD\\n*심각도:* warning\\n*환경:* ${var.environment}\\n*대상:* {{.app.metadata.name}}\\n*상태:* health degraded\\n*요약:* 배포된 애플리케이션의 Health 상태가 Degraded입니다.\\n*링크:* {{.context.argocdUrl}}/applications/{{.app.metadata.name}}"
+                  }
+          EOT
+          "template.team9-sync-succeeded" = <<-EOT
+            webhook:
+              slack_webhook:
+                method: POST
+                body: |
+                  {
+                    "text": "🔵 [배포 성공] Argo CD - {{.app.metadata.name}}\\n*서비스:* Argo CD\\n*심각도:* info\\n*환경:* ${var.environment}\\n*대상:* {{.app.metadata.name}}\\n*상태:* sync succeeded\\n*요약:* Git 변경사항이 클러스터에 정상 반영되었습니다.\\n*링크:* {{.context.argocdUrl}}/applications/{{.app.metadata.name}}"
+                  }
+          EOT
+        }
+        triggers = {
+          "trigger.on-sync-failed" = <<-EOT
+            - description: Application sync failed.
+              oncePer: app.status.operationState.syncResult.revision
+              send:
+              - team9-sync-failed
+              when: app.status.operationState.phase in ['Error', 'Failed']
+          EOT
+          "trigger.on-health-degraded" = <<-EOT
+            - description: Application health degraded.
+              oncePer: app.status.health.status
+              send:
+              - team9-health-degraded
+              when: app.status.health.status == 'Degraded'
+          EOT
+          "trigger.on-sync-succeeded" = <<-EOT
+            - description: Application sync succeeded.
+              oncePer: app.status.sync.revision
+              send:
+              - team9-sync-succeeded
+              when: app.status.operationState.phase in ['Succeeded']
+          EOT
         }
       }
     })
