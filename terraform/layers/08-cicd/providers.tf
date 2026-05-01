@@ -16,6 +16,16 @@ data "terraform_remote_state" "platform" {
   }
 }
 
+data "terraform_remote_state" "edge" {
+  backend = "s3"
+
+  config = {
+    bucket = var.terraform_state_bucket
+    key    = var.edge_state_key
+    region = var.terraform_state_region
+  }
+}
+
 data "aws_eks_cluster" "this" {
   name = data.terraform_remote_state.platform.outputs.cluster_name
 }

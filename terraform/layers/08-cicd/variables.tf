@@ -95,7 +95,7 @@ variable "jenkins_hostname" {
 
 variable "jenkins_public_url" {
   type    = string
-  default = "http://jenkins.team9.cloud.skala-ai.com"
+  default = "https://jenkins.team9.cloud.skala-ai.com"
 }
 
 variable "frontend_pipeline_repo_url" {
@@ -173,6 +173,11 @@ variable "terraform_state_region" {
 variable "platform_state_key" {
   type    = string
   default = "04-platform-eks/terraform.tfstate"
+}
+
+variable "edge_state_key" {
+  type    = string
+  default = "03-edge/terraform.tfstate"
 }
 
 variable "jenkins_kaniko_service_account_name" {

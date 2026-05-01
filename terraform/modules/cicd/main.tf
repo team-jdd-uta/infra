@@ -367,6 +367,9 @@ resource "helm_release" "jenkins" {
           annotations = {
             "alb.ingress.kubernetes.io/scheme"          = "internet-facing"
             "alb.ingress.kubernetes.io/target-type"     = "ip"
+            "alb.ingress.kubernetes.io/listen-ports"    = "[{\"HTTP\":80},{\"HTTPS\":443}]"
+            "alb.ingress.kubernetes.io/ssl-redirect"    = "443"
+            "alb.ingress.kubernetes.io/certificate-arn" = var.ingress_certificate_arn
             "external-dns.alpha.kubernetes.io/hostname" = var.jenkins_hostname
           }
         }
