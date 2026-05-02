@@ -127,6 +127,11 @@ resource "aws_docdb_subnet_group" "documentdb" {
   subnet_ids = var.private_data_subnet_ids
 }
 
+resource "aws_elasticache_subnet_group" "redis_pubsub" {
+  name       = "${var.project_name}-${var.environment}-redis-pubsub-subnets"
+  subnet_ids = var.private_data_subnet_ids
+}
+
 resource "aws_security_group" "rds" {
   name        = "${var.project_name}-${var.environment}-rds-sg"
   description = "RDS security group"
@@ -156,6 +161,19 @@ resource "aws_security_group" "msk" {
 resource "aws_security_group" "msk_connect" {
   name        = "${var.project_name}-${var.environment}-msk-connect-sg"
   description = "MSK Connect security group"
+  vpc_id      = var.vpc_id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "redis_pubsub" {
+  name        = "${var.project_name}-${var.environment}-redis-pubsub-sg"
+  description = "Redis Pub/Sub security group"
   vpc_id      = var.vpc_id
 
   egress {
@@ -221,6 +239,26 @@ resource "aws_security_group_rule" "msk_from_additional_node_security_groups" {
   to_port                  = 9098
   protocol                 = "tcp"
   security_group_id        = aws_security_group.msk.id
+  source_security_group_id = each.value
+}
+
+resource "aws_security_group_rule" "redis_pubsub_from_nodes" {
+  type                     = "ingress"
+  from_port                = 6379
+  to_port                  = 6379
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.redis_pubsub.id
+  source_security_group_id = var.node_security_group_id
+}
+
+resource "aws_security_group_rule" "redis_pubsub_from_additional_node_security_groups" {
+  for_each = toset(var.additional_node_security_group_ids)
+
+  type                     = "ingress"
+  from_port                = 6379
+  to_port                  = 6379
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.redis_pubsub.id
   source_security_group_id = each.value
 }
 
@@ -373,6 +411,46 @@ resource "aws_msk_cluster" "this" {
       }
     }
   }
+}
+
+resource "aws_elasticache_replication_group" "redis_pubsub" {
+  replication_group_id       = "${var.project_name}-${var.environment}-redis-pubsub"
+  description                = "Redis Pub/Sub for streaming chat"
+  engine                     = "redis"
+  engine_version             = "7.1"
+  node_type                  = var.redis_node_type
+  port                       = 6379
+  parameter_group_name       = "default.redis7.cluster.on"
+  num_node_groups            = var.redis_num_node_groups
+  replicas_per_node_group    = var.redis_replicas_per_node_group
+  subnet_group_name          = aws_elasticache_subnet_group.redis_pubsub.name
+  security_group_ids         = [aws_security_group.redis_pubsub.id]
+  automatic_failover_enabled = var.redis_replicas_per_node_group > 0
+  multi_az_enabled           = var.redis_replicas_per_node_group > 0
+  at_rest_encryption_enabled = true
+  transit_encryption_enabled = false
+  apply_immediately          = var.environment != "prod"
+
+  tags = merge(var.common_tags, {
+    Name    = "${var.project_name}-${var.environment}-redis-pubsub"
+    Service = "redis-pubsub"
+  })
+}
+
+resource "aws_secretsmanager_secret" "redis_pubsub" {
+  name        = "${var.project_name}-${var.environment}-redis-pubsub"
+  description = "Redis Pub/Sub connection values for streaming chat"
+  kms_key_id  = var.kms_key_arn
+}
+
+resource "aws_secretsmanager_secret_version" "redis_pubsub" {
+  secret_id = aws_secretsmanager_secret.redis_pubsub.id
+  secret_string = jsonencode({
+    endpoint                   = aws_elasticache_replication_group.redis_pubsub.configuration_endpoint_address
+    port                       = "6379"
+    SPRING_REDIS_CLUSTER_NODES = "${aws_elasticache_replication_group.redis_pubsub.configuration_endpoint_address}:6379"
+    REDIS_NODES                = "${aws_elasticache_replication_group.redis_pubsub.configuration_endpoint_address}:6379"
+  })
 }
 
 resource "aws_cloudwatch_log_group" "msk_connect" {
