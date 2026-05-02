@@ -56,6 +56,9 @@ terraform/
    - Prometheus, Grafana, Loki, SNS
 8. `08-cicd`
    - Jenkins on EKS
+   - ECR repositories
+   - Jenkins seed jobs
+   - GitHub repository webhooks for Jenkins push triggers
 9. `09-auth`
    - Cognito User Pool/App Client, login-service Cognito IRSA role
 
@@ -95,6 +98,7 @@ terraform apply -var-file=../../environments/dev/global.tfvars
 - EKS cluster와 add-on 분리
 - 데이터 계층과 플랫폼 계층 분리
 - ECR 저장소는 Terraform에서 생성하고, Jenkins/워크로드에서 이를 사용한다
+- Jenkins job과 GitHub repository webhook은 같은 pipeline repository 목록에서 파생한다
 
 ## 실제값 체크리스트
 
@@ -127,10 +131,20 @@ terraform apply -var-file=../../environments/dev/global.tfvars
   - `frontend_pipeline_repo_url`
   - `frontend_pipeline_repo_branch`
   - `frontend_pipeline_jenkinsfile_path`
+  - `github_owner`
+  - `github_webhook_url`
   - `backend_pipeline_repositories[*].job_name`
   - `backend_pipeline_repositories[*].repo_url`
   - `backend_pipeline_repositories[*].branch`
   - `backend_pipeline_repositories[*].jenkinsfile_path`
+
+`08-cicd`는 GitHub provider를 사용하므로 plan/apply/import 시 `GITHUB_TOKEN` 환경변수가 필요하다.
+
+```bash
+export GITHUB_TOKEN="$(gh auth token)"
+terraform -chdir=terraform/layers/08-cicd plan \
+  -var-file=../../environments/dev/global.tfvars
+```
 
 ## Secrets Manager로 넘길 값
 
@@ -166,6 +180,10 @@ RTMP 스트리밍 스택은 별도 GitOps 배포 경로를 가지지만, 이미�
 `ecr_backend_repository_names` 목록에 포함해서 Terraform이 `team9-rtmp` ECR repo를
 생성하도록 한다.
 
+RTMP Jenkins job은 `backend_pipeline_repositories`의 `backend-rtmp-dev` 항목으로 생성된다.
+같은 목록에서 GitHub repository webhook도 생성되므로, `backend-rtmp` repo의 push 이벤트가
+`https://jenkins.team9.cloud.skala-ai.com/github-webhook/`로 전달된다.
+
 ## 적용 방법
 
 권장 적용 순서는 아래와 같다.
@@ -176,7 +194,8 @@ RTMP 스트리밍 스택은 별도 GitOps 배포 경로를 가지지만, 이미�
 4. `05-platform-addons`에서 ESO IRSA와 `ClusterSecretStore`를 먼저 생성한다.
 5. `08-cicd`가 Jenkins namespace의 `ExternalSecret`과 Helm/JCasC를 통해 Secrets Manager 값을 읽도록 적용한다.
 
-현재 저장소 기준에서 남은 연결 작업은 다음이다.
+현재 저장소 기준으로 Jenkins 관리자 계정, Git credential, Slack webhook은
+Secrets Manager -> ExternalSecret -> Kubernetes Secret -> Jenkins/JCasC 흐름으로 연결된다.
 
 ### 1. Secrets Manager에 실제 비밀 생성
 
@@ -212,11 +231,14 @@ terraform -chdir=layers/05-platform-addons output cluster_secret_store_name
 
 ### 3. `08-cicd` 적용
 
-이 layer는 아래 흐름으로 Jenkins 비밀을 연결한다.
+이 layer는 아래 흐름으로 Jenkins와 GitHub webhook을 연결한다.
 
 - Secrets Manager secret name을 `global.tfvars`로 전달
-- Jenkins namespace에 `ExternalSecret` 2개 생성
+- Jenkins namespace에 Jenkins admin/Git/Slack `ExternalSecret` 생성
 - Jenkins Helm chart는 `controller.admin.existingSecret`으로 관리자 계정을 읽음
 - Jenkins JCasC는 mounted secret key를 통해 Git credential을 읽음
+- Job DSL seed가 frontend/backend Jenkins job을 생성
+- GitHub provider가 각 pipeline repository에 Jenkins webhook을 생성
 
-즉 현재 상태는 "Secret Manager -> ExternalSecret -> Jenkins Secret -> JCasC 참조" 흐름까지 저장소에 반영된 상태"다.
+즉 현재 상태는 "Secret Manager -> ExternalSecret -> Jenkins Secret -> JCasC 참조"와
+"pipeline repository 목록 -> Jenkins seed job + GitHub repository webhook" 흐름까지 저장소에 반영된 상태다.
