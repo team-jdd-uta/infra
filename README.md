@@ -28,16 +28,23 @@
 - Data
   - RDS MariaDB x3
   - MSK Kafka
+  - ElastiCache Redis Pub/Sub
   - DocumentDB
   - Secrets Manager
 - Observability
   - kube-prometheus-stack
   - Loki
   - SNS Topic
+  - Slack 알림 연동
 - CI/CD
   - Jenkins on EKS
   - ECR 기반 이미지 저장소
   - RTMP 전용 `team9-rtmp` 이미지 저장소
+  - Jenkins seed job
+  - GitHub repository webhook
+- Auth
+  - Cognito User Pool/App Client
+  - login-service Cognito IRSA role
 
 ## 디렉터리 구조
 
@@ -66,17 +73,19 @@ infra/
 6. `06-data`
 7. `07-observability`
 8. `08-cicd`
+9. `09-auth`
 
 삭제는 반드시 역순으로 진행한다.
 
-1. `08-cicd`
-2. `07-observability`
-3. `06-data`
-4. `05-platform-addons`
-5. `04-platform-eks`
-6. `03-edge`
-7. `02-foundation`
-8. `01-bootstrap`
+1. `09-auth`
+2. `08-cicd`
+3. `07-observability`
+4. `06-data`
+5. `05-platform-addons`
+6. `04-platform-eks`
+7. `03-edge`
+8. `02-foundation`
+9. `01-bootstrap`
 
 ## 현재 dev 기준 주요 자원
 
@@ -94,7 +103,16 @@ infra/
   - RDS: `team9-mini-dev-db-02`
   - RDS: `team9-mini-dev-db-03`
   - MSK: `team9-mini-dev-msk`
+  - Redis Pub/Sub: `team9-mini-dev-redis-pubsub`
   - DocumentDB: `team9-mini-dev-documentdb`
+- CI/CD
+  - Jenkins: `https://jenkins.team9.cloud.skala-ai.com`
+  - ECR: `team9-user-service`, `team9-login-service`, `team9-room-service`, `team9-chat-service`,
+    `team9-socket-io-gateway`, `team9-redis-stream-mongo-consumer`, `team9-rtmp`, `team9-ui-vue`
+  - GitHub webhook URL: `https://jenkins.team9.cloud.skala-ai.com/github-webhook/`
+- Auth
+  - Cognito User Pool/App Client
+  - login-service service account용 Cognito IRSA role
 
 ## 실행 전 준비
 
@@ -105,6 +123,7 @@ infra/
 - kubectl 설치
 - Helm 설치
 - GitHub CLI `gh` 설치
+- GitHub webhook을 적용할 때 사용할 `GITHUB_TOKEN`
 
 환경 파일:
 
@@ -146,6 +165,17 @@ terraform apply -var-file=../../environments/dev/global.tfvars
 
 레이어별 backend key를 분리해서 쓰고 싶다면 `backend-02-foundation.hcl` 같은 파일을 환경별로 따로 만들어 사용하면 된다.
 
+`08-cicd`는 GitHub repository webhook도 관리하므로 GitHub token이 필요하다.
+
+```bash
+export GITHUB_TOKEN="$(gh auth token)"
+
+cd terraform/layers/08-cicd
+terraform init -backend-config=../../environments/dev/backend.hcl
+terraform plan -var-file=../../environments/dev/global.tfvars
+terraform apply -var-file=../../environments/dev/global.tfvars
+```
+
 ## 삭제 방법
 
 삭제는 역순으로 진행한다.
@@ -158,7 +188,8 @@ terraform init -backend-config=../../environments/dev/backend.hcl
 terraform destroy -var-file=../../environments/dev/global.tfvars
 ```
 
-그 다음 `07-observability`, `06-data` 순서로 내려간다.
+실제 삭제 시에는 위의 삭제 순서에 맞춰 `09-auth`부터 시작하고, 그 다음 `08-cicd`,
+`07-observability`, `06-data` 순서로 내려간다.
 
 주의:
 
@@ -179,12 +210,14 @@ terraform destroy -var-file=../../environments/dev/global.tfvars
 
 즉 저장소에는 코드와 예시 설정만 올라가고, 실제 환경값과 state는 올라가지 않는다.
 
-## 아직 별도 연결이 필요한 항목
+## 운영 메모
 
-현재 인프라는 생성되지만 아래는 후속 운영 작업이 필요하다.
-
-- Argo CD Git repository 연결
-- External Secrets `SecretStore` / `ExternalSecret` 작성
-- Jenkins ECR credential / IAM 정책 연결
-- Slack webhook 기반 알람 라우팅 구성
-- 실제 서비스 Ingress / Certificate / DNS 연결
+- `05-platform-addons`는 External Secrets Operator, AWS Load Balancer Controller,
+  ExternalDNS, Argo CD, Stakater Reloader를 관리한다.
+- `06-data`는 RDS/MSK/DocumentDB/Redis PubSub과 서비스용 Secrets Manager 값을 관리한다.
+- `08-cicd`는 Jenkins job과 ECR뿐 아니라 GitHub repository webhook도 관리한다.
+  기존 수동 webhook은 Terraform state로 import되어 있으며, 신규 서비스는
+  `backend_pipeline_repositories`에 추가하면 Jenkins seed job과 GitHub webhook이 함께 관리된다.
+- Slack 알림은 Secrets Manager의 Slack webhook 값을 ExternalSecret으로 가져와
+  Jenkins, Argo CD, Alertmanager/Grafana 쪽에서 사용한다.
+- GitOps 애플리케이션 정의와 서비스별 이미지 태그는 `gitops` 저장소가 담당한다.
