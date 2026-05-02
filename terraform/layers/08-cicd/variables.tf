@@ -27,6 +27,7 @@ variable "ecr_backend_repository_names" {
     "team9-socket-io-gateway",
     "team9-chat-service",
     "team9-room-service",
+    "team9-rtmp",
   ]
 }
 

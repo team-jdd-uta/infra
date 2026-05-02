@@ -116,6 +116,7 @@ terraform apply -var-file=../../environments/dev/global.tfvars
 - `environments/<env>/global.tfvars`
   - `ecr_frontend_repository_name`
   - `ecr_backend_repository_names`
+    - RTMP 이미지용 `team9-rtmp` 포함
   - `jenkins_git_credentials_id`
   - `jenkins_admin_secret_name`
   - `jenkins_admin_k8s_secret_name`
@@ -158,6 +159,12 @@ terraform apply -var-file=../../environments/dev/global.tfvars
   - `url`
   - `username`
   - `token`
+
+## RTMP ECR Repository
+
+RTMP 스트리밍 스택은 별도 GitOps 배포 경로를 가지지만, 이미지는 기존 CI/CD 레이어의
+`ecr_backend_repository_names` 목록에 포함해서 Terraform이 `team9-rtmp` ECR repo를
+생성하도록 한다.
 
 ## 적용 방법
 

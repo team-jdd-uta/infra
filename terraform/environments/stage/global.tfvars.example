@@ -21,6 +21,7 @@ ecr_backend_repository_names = [
   "team9-backend-notification",
   "team9-backend-media",
   "team9-backend-admin",
+  "team9-rtmp",
 ]
 jenkins_git_credentials_id     = "gitops-scm-creds"
 jenkins_admin_secret_name      = "team9-mini/stage/jenkins/admin"

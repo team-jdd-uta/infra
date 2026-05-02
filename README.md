@@ -37,6 +37,7 @@
 - CI/CD
   - Jenkins on EKS
   - ECR 기반 이미지 저장소
+  - RTMP 전용 `team9-rtmp` 이미지 저장소
 
 ## 디렉터리 구조
 
