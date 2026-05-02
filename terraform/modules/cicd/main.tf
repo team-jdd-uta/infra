@@ -11,6 +11,11 @@ locals {
 
   ecr_repository_names = distinct(concat(var.ecr_backend_repository_names, var.ecr_legacy_repository_names))
 
+  pipeline_webhook_repositories = toset(distinct(concat(
+    [trimsuffix(basename(var.frontend_pipeline_repo_url), ".git")],
+    [for repo in var.backend_pipeline_repositories : trimsuffix(basename(repo.repo_url), ".git")]
+  )))
+
   jcasc_config = templatefile("${path.module}/assets/jenkins/jcasc.yaml.tftpl", {
     jenkins_git_credentials_id           = var.jenkins_git_credentials_id
     jenkins_git_username_secret_value    = format("$${%s-git-username}", var.jenkins_git_k8s_secret_name)
@@ -84,6 +89,21 @@ resource "aws_ecr_lifecycle_policy" "repositories" {
       }
     ]
   })
+}
+
+resource "github_repository_webhook" "jenkins" {
+  for_each = local.pipeline_webhook_repositories
+
+  repository = each.value
+
+  configuration {
+    url          = var.github_webhook_url
+    content_type = "json"
+    insecure_ssl = false
+  }
+
+  active = true
+  events = ["push"]
 }
 
 resource "kubernetes_namespace" "jenkins" {

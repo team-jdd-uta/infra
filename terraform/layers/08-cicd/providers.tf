@@ -47,3 +47,7 @@ provider "helm" {
     token                  = data.aws_eks_cluster_auth.this.token
   }
 }
+
+provider "github" {
+  owner = var.github_owner
+}

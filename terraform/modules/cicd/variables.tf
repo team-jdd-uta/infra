@@ -70,6 +70,11 @@ variable "frontend_pipeline_job_name" {
   type = string
 }
 
+variable "github_webhook_url" {
+  type        = string
+  description = "Jenkins GitHub webhook endpoint registered on pipeline repositories."
+}
+
 variable "jenkins_hostname" {
   type = string
 }

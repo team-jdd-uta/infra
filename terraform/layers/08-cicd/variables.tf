@@ -89,6 +89,18 @@ variable "frontend_pipeline_job_name" {
   default = "frontend-dev"
 }
 
+variable "github_owner" {
+  type        = string
+  description = "GitHub organization or user that owns the pipeline repositories."
+  default     = "team-jdd-uta"
+}
+
+variable "github_webhook_url" {
+  type        = string
+  description = "Jenkins GitHub webhook endpoint registered on pipeline repositories."
+  default     = "https://jenkins.team9.cloud.skala-ai.com/github-webhook/"
+}
+
 variable "jenkins_hostname" {
   type    = string
   default = "jenkins.team9.cloud.skala-ai.com"

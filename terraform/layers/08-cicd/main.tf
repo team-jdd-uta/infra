@@ -22,6 +22,7 @@ module "cicd" {
   ingress_certificate_arn                    = data.terraform_remote_state.edge.outputs.alb_ingress_certificate_arn
   external_secrets_cluster_secret_store_name = var.external_secrets_cluster_secret_store_name
   frontend_pipeline_job_name                 = var.frontend_pipeline_job_name
+  github_webhook_url                         = var.github_webhook_url
   frontend_pipeline_repo_url                 = var.frontend_pipeline_repo_url
   frontend_pipeline_repo_branch              = var.frontend_pipeline_repo_branch
   frontend_pipeline_jenkinsfile_path         = var.frontend_pipeline_jenkinsfile_path
