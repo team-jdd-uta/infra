@@ -2,6 +2,7 @@ locals {
   addons = {
     metrics_server               = true
     external_secrets             = true
+    reloader                     = true
     cert_manager                 = true
     aws_load_balancer_controller = true
     external_dns                 = true
@@ -252,6 +253,12 @@ resource "kubernetes_namespace" "external_secrets" {
   }
 }
 
+resource "kubernetes_namespace" "reloader" {
+  metadata {
+    name = "reloader"
+  }
+}
+
 resource "kubernetes_namespace" "cert_manager" {
   metadata {
     name = "cert-manager"
@@ -328,6 +335,21 @@ resource "helm_release" "external_secrets" {
         annotations = {
           "eks.amazonaws.com/role-arn" = aws_iam_role.external_secrets.arn
         }
+      }
+    })
+  ]
+}
+
+resource "helm_release" "reloader" {
+  name       = "reloader"
+  repository = "https://stakater.github.io/stakater-charts"
+  chart      = "reloader"
+  namespace  = kubernetes_namespace.reloader.metadata[0].name
+
+  values = [
+    yamlencode({
+      reloader = {
+        watchGlobally = true
       }
     })
   ]
