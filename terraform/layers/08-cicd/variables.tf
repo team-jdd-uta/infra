@@ -158,6 +158,12 @@ variable "backend_pipeline_repositories" {
       branch           = "main"
       jenkinsfile_path = "jenkins/Jenkinsfile"
     },
+    {
+      job_name         = "backend-rtmp-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-rtmp.git"
+      branch           = "main"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
+    },
   ]
 }
 
