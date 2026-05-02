@@ -175,6 +175,15 @@ data "aws_iam_policy_document" "external_secrets" {
 
     resources = ["*"]
   }
+
+  statement {
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+    ]
+
+    resources = [var.kms_key_arn]
+  }
 }
 
 resource "aws_iam_role" "alb_controller" {
@@ -487,7 +496,7 @@ resource "helm_release" "argocd" {
           },
         ]
         templates = {
-          "template.team9-sync-failed" = <<-EOT
+          "template.team9-sync-failed"     = <<-EOT
             webhook:
               slack_webhook:
                 method: POST
@@ -529,7 +538,7 @@ resource "helm_release" "argocd" {
                     }]
                   }
           EOT
-          "template.team9-sync-succeeded" = <<-EOT
+          "template.team9-sync-succeeded"  = <<-EOT
             webhook:
               slack_webhook:
                 method: POST
@@ -552,7 +561,7 @@ resource "helm_release" "argocd" {
           EOT
         }
         triggers = {
-          "trigger.on-sync-failed" = <<-EOT
+          "trigger.on-sync-failed"     = <<-EOT
             - description: Application sync failed.
               oncePer: app.status.operationState.syncResult.revision
               send:
@@ -566,7 +575,7 @@ resource "helm_release" "argocd" {
               - team9-health-degraded
               when: app.status.health.status == 'Degraded'
           EOT
-          "trigger.on-sync-succeeded" = <<-EOT
+          "trigger.on-sync-succeeded"  = <<-EOT
             - description: Application sync succeeded.
               oncePer: app.status.sync.revision
               send:

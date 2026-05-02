@@ -53,3 +53,7 @@ variable "slack_webhook_secret_name" {
 variable "external_secrets_cluster_secret_store_name" {
   type = string
 }
+
+variable "kms_key_arn" {
+  type = string
+}

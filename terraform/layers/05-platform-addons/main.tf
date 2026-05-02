@@ -9,6 +9,7 @@ module "platform_addons" {
   oidc_provider_arn       = data.terraform_remote_state.platform.outputs.oidc_provider_arn
   oidc_issuer_url         = data.terraform_remote_state.platform.outputs.oidc_issuer_url
   vpc_id                  = data.terraform_remote_state.foundation.outputs.vpc_id
+  kms_key_arn             = data.terraform_remote_state.foundation.outputs.kms_key_arn
   root_domain_name        = var.root_domain_name
   cert_manager_email      = var.cert_manager_email
   argocd_hostname         = var.argocd_hostname
