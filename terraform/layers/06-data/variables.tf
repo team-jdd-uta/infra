@@ -38,6 +38,21 @@ variable "msk_number_of_broker_nodes" {
   default = 3
 }
 
+variable "redis_node_type" {
+  type    = string
+  default = "cache.t4g.micro"
+}
+
+variable "redis_num_node_groups" {
+  type    = number
+  default = 1
+}
+
+variable "redis_replicas_per_node_group" {
+  type    = number
+  default = 1
+}
+
 variable "documentdb_instance_class" {
   type    = string
   default = "db.r6g.large"

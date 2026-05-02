@@ -22,6 +22,18 @@ output "msk_bootstrap_brokers_sasl_iam" {
   value = module.data.msk_bootstrap_brokers_sasl_iam
 }
 
+output "redis_pubsub_replication_group_id" {
+  value = module.data.redis_pubsub_replication_group_id
+}
+
+output "redis_pubsub_configuration_endpoint" {
+  value = module.data.redis_pubsub_configuration_endpoint
+}
+
+output "redis_pubsub_secret_name" {
+  value = module.data.redis_pubsub_secret_name
+}
+
 output "documentdb_cluster_id" {
   value = module.data.documentdb_cluster_id
 }

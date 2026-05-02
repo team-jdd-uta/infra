@@ -30,6 +30,18 @@ variable "msk_number_of_broker_nodes" {
   type = number
 }
 
+variable "redis_node_type" {
+  type = string
+}
+
+variable "redis_num_node_groups" {
+  type = number
+}
+
+variable "redis_replicas_per_node_group" {
+  type = number
+}
+
 variable "documentdb_instance_class" {
   type = string
 }

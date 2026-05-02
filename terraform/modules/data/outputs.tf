@@ -22,6 +22,18 @@ output "msk_bootstrap_brokers_sasl_iam" {
   value = aws_msk_cluster.this.bootstrap_brokers_sasl_iam
 }
 
+output "redis_pubsub_replication_group_id" {
+  value = aws_elasticache_replication_group.redis_pubsub.replication_group_id
+}
+
+output "redis_pubsub_configuration_endpoint" {
+  value = aws_elasticache_replication_group.redis_pubsub.configuration_endpoint_address
+}
+
+output "redis_pubsub_secret_name" {
+  value = aws_secretsmanager_secret.redis_pubsub.name
+}
+
 output "documentdb_cluster_id" {
   value = aws_docdb_cluster.this.cluster_identifier
 }

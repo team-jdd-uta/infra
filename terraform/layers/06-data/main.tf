@@ -33,6 +33,9 @@ module "data" {
   msk_broker_instance_type         = var.msk_broker_instance_type
   msk_kafka_version                = var.msk_kafka_version
   msk_number_of_broker_nodes       = var.msk_number_of_broker_nodes
+  redis_node_type                  = var.redis_node_type
+  redis_num_node_groups            = var.redis_num_node_groups
+  redis_replicas_per_node_group    = var.redis_replicas_per_node_group
   documentdb_instance_class        = var.documentdb_instance_class
   enable_debezium_connector        = var.enable_debezium_connector
   debezium_plugin_bucket_arn       = var.debezium_plugin_bucket_arn
