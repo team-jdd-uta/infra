@@ -34,6 +34,10 @@ output "redis_pubsub_secret_name" {
   value = aws_secretsmanager_secret.redis_pubsub.name
 }
 
+output "ai_chat_summary_secret_name" {
+  value = aws_secretsmanager_secret.ai_chat_summary.name
+}
+
 output "documentdb_cluster_id" {
   value = aws_docdb_cluster.this.cluster_identifier
 }
