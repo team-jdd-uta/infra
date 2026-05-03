@@ -22,6 +22,7 @@ ecr_backend_repository_names = [
   "team9-user-service",
   "team9-redis-stream-mongo-consumer",
   "team9-login-service",
+  "team9-auth-service",
   "team9-socket-io-gateway",
   "team9-chat-service",
   "team9-room-service",
@@ -74,6 +75,12 @@ backend_pipeline_repositories = [
     repo_url         = "https://github.com/team-jdd-uta/backend-login-service.git"
     branch           = "main"
     jenkinsfile_path = "jenkins/Jenkinsfile"
+  },
+  {
+    job_name         = "backend-auth-service-dev"
+    repo_url         = "https://github.com/team-jdd-uta/backend-auth.git"
+    branch           = "main"
+    jenkinsfile_path = "Jenkinsfile"
   },
   {
     job_name         = "backend-socket-io-gateway-dev"
