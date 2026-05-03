@@ -29,6 +29,7 @@ variable "ecr_backend_repository_names" {
     "team9-room-service",
     "team9-ai-chat-summary",
     "team9-rtmp",
+    "team9-auth-service",
   ]
 }
 
@@ -152,6 +153,12 @@ variable "backend_pipeline_repositories" {
       repo_url         = "https://github.com/team-jdd-uta/backend-login-service.git"
       branch           = "main"
       jenkinsfile_path = "jenkins/Jenkinsfile"
+    },
+    {
+      job_name         = "backend-auth-service-dev"
+      repo_url         = "https://github.com/team-jdd-uta/backend-auth.git"
+      branch           = "main"
+      jenkinsfile_path = "Jenkinsfile"
     },
     {
       job_name         = "backend-socket-io-gateway-dev"
