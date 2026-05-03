@@ -453,6 +453,16 @@ resource "aws_secretsmanager_secret_version" "redis_pubsub" {
   })
 }
 
+resource "aws_secretsmanager_secret" "ai_chat_summary" {
+  name        = "${var.project_name}/${var.environment}/backend/ai-chat-summary"
+  description = "Runtime secret values for AI chat summary service"
+
+  tags = merge(var.common_tags, {
+    Name    = "${var.project_name}-${var.environment}-ai-chat-summary-secret"
+    Service = "ai-chat-summary"
+  })
+}
+
 resource "aws_cloudwatch_log_group" "msk_connect" {
   count             = var.enable_debezium_connector ? 1 : 0
   name              = "/aws/msk-connect/${var.project_name}-${var.environment}/debezium-source"

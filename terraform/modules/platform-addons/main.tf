@@ -309,6 +309,7 @@ resource "helm_release" "external_dns" {
   values = [
     yamlencode({
       provider      = "aws"
+      sources       = ["service", "ingress", "gateway-httproute"]
       domainFilters = [var.root_domain_name]
       serviceAccount = {
         create = true
