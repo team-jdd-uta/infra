@@ -158,7 +158,7 @@ variable "backend_pipeline_repositories" {
       job_name         = "backend-auth-service-dev"
       repo_url         = "https://github.com/team-jdd-uta/backend-auth.git"
       branch           = "main"
-      jenkinsfile_path = "Jenkinsfile"
+      jenkinsfile_path = "jenkins/Jenkinsfile"
     },
     {
       job_name         = "backend-socket-io-gateway-dev"
