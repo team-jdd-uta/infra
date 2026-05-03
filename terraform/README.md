@@ -104,6 +104,21 @@ terraform apply -var-file=../../environments/dev/global.tfvars
 
 아래 값들은 현재 example 값으로만 들어 있다. 실제 적용 전 반드시 환경값으로 교체해야 한다.
 
+## 환경별 안전성 기준
+
+현재 `dev` example은 팀 개발/시연 편의성을 우선한 값이다. `stage`/`prod`에 그대로 복사하지 말고 아래 항목을 먼저 좁힌다.
+
+| 항목 | dev 기준 | stage/prod 기준 |
+| --- | --- | --- |
+| Security group egress | 일부 `0.0.0.0/0` 허용 | 필요한 AWS/service CIDR 또는 VPC endpoint 경로로 축소 |
+| EKS/API 접근 | 개발 편의 설정 포함 | 운영자/VPN/bastion CIDR로 제한 |
+| External Secrets IAM | 일부 policy가 Secrets Manager `*` 범위를 사용 | `team9-mini/<env>/...` ARN prefix 또는 service account별 secret ARN으로 제한 |
+| Redis transit encryption | 현재 dev는 `false` | 신규 stage/prod는 `true`를 기본 검토하고 GitOps Redis client SSL 설정과 같이 변경 |
+| RDS/DocumentDB 삭제 보호 | `environment == "prod"`일 때 보호 | stage/prod 실제 운영 데이터는 deletion protection, backup retention, final snapshot 정책을 명시 |
+| Jenkins/GitHub token | dev bootstrap 편의를 위해 example에 경로를 명시 | 실제 secret 값은 Secrets Manager/CI credential store에만 저장 |
+
+운영 전환 PR은 보안그룹, IAM policy, Redis SSL, database deletion policy를 같은 PR에서 한 번에 바꾸지 말고 layer별로 분리한다. 네트워크/IAM 변경은 apply 전 plan을 공유하고, 테스트는 별도 최종 검증 단계에서 실행한다.
+
 ### `06-data`
 
 - `environments/<env>/global.tfvars`

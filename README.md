@@ -60,6 +60,7 @@ infra/
 ```
 
 세부 Terraform 구조는 [terraform/README.md](./terraform/README.md)에 정리되어 있다.
+환경별 보안/운영 전환 기준은 [terraform/README.md](./terraform/README.md)의 "환경별 안전성 기준"을 먼저 확인한다.
 
 ## Layer 순서
 
