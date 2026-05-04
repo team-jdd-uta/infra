@@ -20,6 +20,7 @@
   - EKS Managed Add-on
 - EKS Add-ons
   - Metrics Server
+  - KEDA
   - External Secrets Operator
   - cert-manager
   - AWS Load Balancer Controller

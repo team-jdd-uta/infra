@@ -1,6 +1,7 @@
 locals {
   addons = {
     metrics_server               = true
+    keda                         = true
     external_secrets             = true
     reloader                     = true
     cert_manager                 = true
@@ -276,6 +277,19 @@ resource "helm_release" "metrics_server" {
   repository = "https://kubernetes-sigs.github.io/metrics-server/"
   chart      = "metrics-server"
   namespace  = "kube-system"
+}
+
+resource "kubernetes_namespace" "keda" {
+  metadata {
+    name = "keda"
+  }
+}
+
+resource "helm_release" "keda" {
+  name       = "keda"
+  repository = "https://kedacore.github.io/charts"
+  chart      = "keda"
+  namespace  = kubernetes_namespace.keda.metadata[0].name
 }
 
 resource "helm_release" "aws_load_balancer_controller" {
